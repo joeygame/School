@@ -1,0 +1,391 @@
+<!----This program draws multiple different 3d shapes spinning and moving---->
+<html>
+
+<head>
+    <title>scripts</title>
+<!--script files for webgl set up and math operations -->
+<script type = "text/javascript" src= "webgl-utils.js"></script>
+<script type = "text/javascript" src= "init-shaders.js"></script>
+<script type = "text/javascript" src= "math.js"></script>
+
+<!--script vertex shader-->
+<script id = "vertex-shader" type="x-shader/x-vertex">
+attribute vec4 aPosition;	//vertex coordinate
+attribute vec4 aColor;		//vertex color
+varying vec4 vColor;		//varying color
+uniform mat4 uModelMatrix;	//model matrix
+uniform mat4 uViewMatrix;	//view matrix
+uniform mat4 uProjectMatrix; //projection matrix
+void main()
+{
+	//model, view, project
+	gl_Position = uProjectMatrix * uViewMatrix * uModelMatrix * aPosition;
+	
+	//pass color
+	vColor = aColor;
+}
+</script>
+
+<!--fragment shader -->
+<script id = "fragment-shader" type = "x-shader/x-fragment">
+precision mediump float;		//medium float precision
+varying vec4 vColor;			//varying color
+void main()
+{
+	gl_FragColor = vColor;
+}
+</script>
+
+<script>
+var gl;					//webgl context
+var uModelMatrix;		//model matrix
+var distance;			//translation distance
+var sign;				//translation direction
+var angle1;				//rotation angle one
+var angle2;				//rotation angle two
+var size = 150;
+var sizeDir = 1;
+
+//main drawing function
+function main()
+{
+	//set up webgl
+        
+	var canvas = document.getElementById("gl-canvas");
+	gl= WebGLUtils.setupWebGL(canvas);
+		
+	//set up shaders
+        
+	var program = initShaders(gl, "vertex-shader", "fragment-shader");
+	gl.useProgram(program);
+	
+	//create color cube
+        
+	var vertices = [];
+	var colors = [];
+	makeColorCube(vertices, colors);
+	makeTriangle(vec3(0.0, 1.0,  0.0), vec3(-1.0,-1.0, -1.0),
+vec3(0.0, -1.0,  1.0), vec3(1.0, -1.0,  -1.0), 2,  vertices, colors);
+
+
+//create cylinder frame
+var cylinderRadius = 1.0;
+var cylinderHeight = 2.0;
+var horizontalLines = 10;
+var verticalLines = 20;
+makeCylinder(cylinderRadius, cylinderHeight, verticalLines, horizontalLines, vertices, colors);
+
+	makeTriangle(vec3(0.0, 1.0,  0.0), vec3(-1.0,-1.0, -1.0),
+vec3(0.0, -1.0,  1.0), vec3(1.0, -1.0,  -1.0), 0,  vertices, colors);
+
+	//create vertex buffer and bind it
+        
+	var vertexBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+	
+	//connect vertex buffer to attribute variable aPosition
+        
+	var aPosition = gl.getAttribLocation(program, "aPosition");
+	gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(aPosition);
+	
+	//buffer vertices into vertex buffer
+        
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices),gl.STATIC_DRAW);
+	
+	//create color buffer and bind it
+        
+	var colorBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+	
+	//connect color buffer to attribute variable color
+        
+	var aColor= gl.getAttribLocation(program, "aColor");
+	gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0,0);
+	gl.enableVertexAttribArray(aColor);
+	
+	//buffer colors into color buffer
+        
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+	
+	//view parameters
+        
+	var eye = vec3(400, 700, 500);
+	var at = vec3(300, 100, 0);
+	var up = vec3(0,1,0);
+	
+	//orthagonal projection parameters
+        
+	var width = 1200;
+	var height = 500;
+	var near = 1;
+	var far = 2000;
+	
+	//connect, create, and send view matrix
+        
+	var uViewMatrix = gl.getUniformLocation(program, "uViewMatrix");
+	var matrix1 = lookat(eye, at, up);
+	gl.uniformMatrix4fv(uViewMatrix, false, flatten(matrix1));
+	
+	//connect, create, and send projection matrix
+        
+	var uProjectMatrix = gl.getUniformLocation(program, "uProjectMatrix");
+	var matrix2 = orthogonal(width, height, near, far);
+	gl.uniformMatrix4fv(uProjectMatrix, false, flatten(matrix2));
+	
+	//connect to model matrix
+        
+	uModelMatrix = gl.getUniformLocation(program, "uModelMatrix");
+	
+	//initiate values
+        
+	distance = 500;
+	sign = 1;
+	angle1 = 0;
+	angle2 = 0;
+	
+	//set viewport
+        
+	gl.viewport(0,0,canvas.width, canvas.height);
+	
+	//canvas color is black
+        
+	gl.clearColor(0.0,0.0,0.0,1.0);
+	
+	//enable depth test
+        
+	gl.enable(gl.DEPTH_TEST);
+	
+	//draw scene
+        
+	draw();
+}
+
+//draws scene
+
+function draw()
+{
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	
+	var matrix, matrix1, matrix2, matrix3;
+	/***********************makes a oscillating cylinder**********************************/
+	distance = distance + sign*2;
+	if(distance>700 || distance < 500)			//update angle
+		{ sign = -sign; }
+		
+	matrix1 = scaling(50,50,50);
+	matrix2 = translate(distance, 250, 100);	//transformation matrices
+	matrix = multiply(matrix2, matrix1);
+	gl.uniformMatrix4fv(uModelMatrix, false, flatten(matrix));
+	
+	gl.drawArrays(gl.LINES, 228, 440);			//draw cube
+	
+	/****************Sierpinski Triangle rotating*****************************/
+	
+	angle1 = angle1 -2;
+	
+	matrix1 = scaling(40,75,40);
+	matrix2 = rotatey(angle1);
+	matrix3 = translate(500,400,0);
+	matrix = multiply(matrix3, multiply(matrix2, matrix1));
+	gl.uniformMatrix4fv(uModelMatrix, false, flatten(matrix));
+	
+	gl.drawArrays(gl.TRIANGLES, 36, 3*4*4*4);
+	
+	/********************cube floating around x axis***************************/
+	angle2 = angle2 + 2;				//update angle
+	matrix1 = scaling(20,20,20);
+	matrix2 = translate(0,40,0);
+	matrix3 = rotatex(angle2);
+	matrix = multiply(matrix3, multiply(matrix2, matrix1));
+	
+	gl.uniformMatrix4fv(uModelMatrix, false, flatten(multiply(translate(0,0,180),matrix)));
+	
+	gl.drawArrays(gl.TRIANGLES, 0, 36);			//draw cube
+	
+	/******************************************************************/
+	
+	/******************shrinking and growing tetrahedron*********************/
+	if(size > 300){
+		sizeDir = sizeDir*-1;
+	} else if (size < 100) {
+		sizeDir = sizeDir*-1;
+	}
+	
+	size = size + sizeDir*3;
+	
+	matrix1 = scaling(size,size,size);
+	matrix2 = translate(0,40,0);
+	matrix = multiply(multiply(matrix2, matrix1),multiply(rotatex(-60),translate(0,-.5,0)));
+	
+	gl.uniformMatrix4fv(uModelMatrix, false, flatten(matrix));
+	
+	gl.drawArrays(gl.TRIANGLES, 36, 12);			//draw cube
+	/******************************************************************/
+	
+	requestAnimationFrame(draw);
+}
+
+	//creates color cube centered at origin
+        
+	function makeColorCube(vertexArray, colorArray)
+	{
+		//8 vertices of cube
+	var v1 = vec3(-1,1,1), v2 = vec3(1,1,1),
+		v3 = vec3(1,-1,1), v4 = vec3(-1,-1,1),
+		v5 = vec3(-1,1,-1), v6 = vec3(1,1,-1),
+		v7 = vec3(1,-1,-1), v8 = vec3(-1,-1,-1);
+		
+		//6 faces of cube, each face is 2 triangles
+                
+		vertexArray.push(v1, v2, v3, v1, v3, v4,
+						  v1, v5, v6, v1, v6, v2,
+						  v2, v6, v7, v2, v7, v3,
+						  v5, v6, v7, v5, v7, v8,
+						  v4, v8, v7, v4, v7, v3,
+						  v1, v5, v8, v1, v8, v4);
+						 
+	//6 colors of cube faces
+	var red = vec3(1,0,0);
+	var green = vec3(0,1,0);
+	var blue = vec3(0,0,1);
+	var yellow = vec3(1,1,0);
+	var brown = vec3(0.7,0.3,0.1);
+	var	white = vec3(1,1,1);
+			
+	//cube face colors
+	colorArray.push(red, red, red, red, red, red,	//front is red
+	green, green, green, green, green, green,	//top is green
+	blue, blue, blue, blue, blue, blue,		//right is blue
+	brown, brown, brown, brown, brown, brown,	//back in brown
+	yellow, yellow, yellow, yellow, yellow, yellow,	//bottom is yellow
+	white, white, white, white, white, white);	//left is white						
+	}
+	
+	//creates Sierpenski's triangle
+function makeTriangle(a, b, c, d, count, vertexArray, colorArray)
+{
+if (count == 0) //base case
+tetra(a, b, c, d, vertexArray, colorArray); //create tetrahedron
+else
+{
+	var ab = scale(0.5, add(a, b)); //recursive case
+	var ac = scale(0.5, add(a, c));
+	var ad = scale(0.5, add(a, d)); //sub divide
+	var bc = scale(0.5, add(b, c));
+	var bd = scale(0.5, add(b, d)); //create 4 Sierpenski's
+	var cd = scale(0.5, add(c, d)); //triangles recursively
+	makeTriangle(a, ab, ac, ad, count -1, vertexArray, colorArray);
+	makeTriangle(ab, b, bc, bd, count -1, vertexArray, colorArray);
+	makeTriangle(ac, bc, c, cd, count -1, vertexArray, colorArray);
+	makeTriangle(ad, bd, cd, d, count -1, vertexArray, colorArray);
+    }
+}
+//creates a tetrahedron with four face colors
+function tetra(a, b, c, d, vertexArray, colorArray)
+{
+if (count == 0) //base case
+tetra(a, b, c, d, vertexArray, colorArray); //create tetrahedron
+else
+{
+var ab = scale(0.5, add(a, b)); //recursive case
+var ac = scale(0.5, add(a, c));
+var ad = scale(0.5, add(a, d)); //sub divide
+var bc = scale(0.5, add(b, C));
+var bd = scale(0.5, add(b, d)); //create 4 Sierpenski's
+var cd = scale(0.5, add(c, d)); //triangles recursively
+makeTriangle(a, ab, ac, ad, count -1, vertexArray, colorArray);
+makeTriangle(ab, b, bc, bd, count -1, vertexArray, colorArray);
+makeTriangle(ac, bc, c, cd, count -1, vertexArray, colorArray);
+makeTriangle(ad, bd, cd, d, count -1, vertexArray, colorArray);
+}
+}
+//creates a tetrahedron with four face colors
+function tetra(a, b, c, d, vertexArray, colorArray)
+{
+//red, green, blue, white color
+var red = vec3(1.0, 0.0, 0.0);
+var green = vec3(0.0, 0.7, 0.0);
+var blue = vec3(0.0, 0.0, 1.0);
+var white = vec3(1.0, 1.0, 1.0);
+
+//create 4 triangles
+triangle(a, b, c, red, vertexArray, colorArray);
+triangle(a, c, d, green, vertexArray, colorArray);
+triangle(a, b, d, blue, vertexArray, colorArray);
+triangle(b, c, d, white, vertexArray, colorArray);
+}
+//creates a triangle with a given color
+function triangle(a, b, c, color, vertexArray, colorArray)
+{
+vertexArray.push(a, b, c); //store vertices
+colorArray.push(color, color, color); //store color
+}
+//function to make a cylinder
+function makeCylinder(radius, height, vertical, horizontal, vertexArray, colorArray)
+{
+	var i, j, x, y, z, theta, delta;
+	theta = 2*Math.PI/vertical; //angle increment
+	delta = height/(horizontal-1); //height increment
+	for(var i = 0; i < horizontal; i++){ //for each horizontal level
+		for (j = 0; j < vertical; j++){ //create circle
+			x = radius*Math.cos(j*theta); //circle is made of line segments
+			z = radius*Math.sin(j*theta);
+			y = -height/2 + i*delta;
+			vertexArray.push(vec3(x,y,z));
+			//each line segment is a
+			x = radius*Math.cos((j+1)*theta); //pair of points
+			z = radius*Math.sin((j+1)*theta);
+			y = -height/2 + i*delta;
+			vertexArray.push(vec3(x, y, z));
+		}	
+	}
+	for (i = 0; i < vertical; i++) //create vertical lines
+	{
+		x = radius*Math.cos(i*theta);
+		z = radius*Math.sin(i*theta);
+		y = height/2; //each line is a pair
+		//of points
+		vertexArray.push(vec3(x, y, z) , vec3(x, -y, z));
+	}
+	
+	for(i=0; i<2*vertical*horizontal+2*vertical; i++){
+			colorArray.push(vec3(1.0,0.0,0.0));
+	}
+}
+</script>
+	
+</head>
+	
+	<!--draw scene-->
+	<body onload = "main()">
+	
+	<!--canvas for drawing scene-->
+	<canvas id = "gl-canvas" width = "1200" height = "600"></canvas>
+	
+	</body>
+	</html>
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
