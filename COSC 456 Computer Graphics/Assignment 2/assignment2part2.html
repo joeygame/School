@@ -1,0 +1,292 @@
+<!-- This programs is a cat and mouse game
+The mouse moves randomly on a grid, the catch must catch it using W A S D to control it
+-->
+
+<html>
+
+<head>
+
+<!-- script files for webgl set up and math operations -->
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="init-shaders.js"></script>
+<script type="text/javascript" src="math.js"></script>
+
+<!-- vertex shader -->
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 aPosition;       //vertex coordinate
+uniform mat4 uMatrix;
+void main()
+{
+	gl_Position = uMatrix*aPosition; //apply matrix
+}
+</script>
+
+<!-- fragment shader -->
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;                     //medium float precision
+uniform vec4 uColor;
+void main()
+{
+    gl_FragColor = uColor; //fragment color is red
+}
+</script>
+
+<script>
+//global variables, and uniforms
+var gl;
+var uMatrix;
+var uColor;
+//matrices for easily moving the objects
+var matrix;
+var matrix1;
+var matrix2;
+var matrix3;
+var matrix4;
+var uColor;
+
+//variable for control of characters
+var mouseWait = 20; //# of frames before moving mouse
+var pressedUp = false; //true when the up arrow is pressed
+var pressedLeft = false; //true when the left arrow is pressed
+var pressedRight = false; //true when the right arrow is pressed
+
+//global vars of character positions
+var mouseX = parseInt((Math.random()*20 + 1));
+var mouseY = parseInt((Math.random()*20 + 1));
+var playerX = parseInt((Math.random()*20 + 1));
+var playerY = parseInt((Math.random()*20 + 1));
+var playerAngle = 0; //angle for cat to turn
+var facing = "left"; //direction the cat is facing
+
+//main drawing function 
+function main()
+{
+    vertices =        //vertices of grid lines and cat/mouse
+    [
+		//horizontal line
+        vec2(-1,-1),
+        vec2(-1,-.993),
+        vec2(1,-.993),
+        vec2(1,-1),
+		//vertical line
+        vec2(-1,-1),
+        vec2(-1,1),
+        vec2(-.993,1),
+        vec2(-.993,-1),
+		//mouse
+		vec2(-1.03, -1.03),
+		vec2(-1.03, -.97),
+		vec2(-.97, -.97),
+		vec2(-.97, -1.03),
+		//cat
+		vec2(-.03, 0.00),
+		vec2(0.03, 0.03),
+		vec2(0.03, -.03),
+		
+    ];
+	
+	
+    //set up webgl
+    var canvas = document.getElementById("gl-canvas");
+    gl = WebGLUtils.setupWebGL(canvas);
+    
+    //set up shaders
+    var program = initShaders(gl, "vertex-shader", "fragment-shader");
+    gl.useProgram(program);
+
+    //create vertex buffer and bind it
+    var vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+
+    //connect vertex bufffer to attribute variable aPosition
+    var aPosition = gl.getAttribLocation(program, "aPosition");
+    gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(aPosition);
+	
+    //buffer vertices into vertex buffer    
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+
+    //canvas color is black, clear canvas
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+    //set view port to canvas
+    gl.viewport(0, 0, canvas.width, canvas.height);
+	
+	//conntect to uniform matrix and uniform color
+	uMatrix = gl.getUniformLocation(program, "uMatrix");
+	uColor = gl.getUniformLocation(program, "uColor");
+	
+	//start drawing the animated shapes
+	draw();
+}
+
+function draw(){
+    gl.clear(gl.COLOR_BUFFER_BIT);//clear canvas
+	
+	//--------------draw grid------------
+	for(var i = 0; i<20; i++){
+	//-----first make horizontal lines
+	//create matrix for translating
+	matrix = translate(0,i*.1,0);
+	
+	//send matrix and color uniforms
+	gl.uniformMatrix4fv(uMatrix, false, flatten(matrix));
+	gl.uniform4fv(uColor, flatten(vec4(1.0,0.0,0.0,1.0))); //pass color to uniform
+	
+	//draw array
+    gl.drawArrays(gl.TRIANGLE_FAN, 0,4);
+	
+	//then make vertical lines
+	//create matrix for translating
+	matrix = translate(i*.1,0,0);
+	
+	//send matrix and color uniforms
+	gl.uniformMatrix4fv(uMatrix, false, flatten(matrix));
+	gl.uniform4fv(uColor, flatten(vec4(1.0,0.0,0.0,1.0))); //pass color to uniform
+	
+	//draw array
+    gl.drawArrays(gl.TRIANGLE_FAN, 4,4);
+	}
+	
+	
+	//----------draw mouse square----------------
+	
+	if(mouseWait == 0){ //if timer is at 0, reset it and move mouse
+		mouseWait = 20; //reset timer
+		
+		//move the mouse in one of 4 directions randomly
+		var direction = Math.random();
+		if (direction < .25){
+			mouseX++;
+		} else if (direction < .50){
+			mouseY++;
+		} else if (direction < .75){
+			mouseX--;
+		} else if (direction < 1){
+			mouseY--;
+		}
+		
+		//make sure mouse wraps to other edge when it goes to far
+		if(mouseX>20){
+			mouseX = 1;
+		} else if(mouseY>20){
+			mouseY = 1;
+		} else if(mouseX<1){
+			mouseX = 20;
+		} else if(mouseY<1){
+			mouseY = 20;
+		}
+	}
+	//create matrix for translating mouse to correct location
+	matrix = translate(mouseX/10-.047,mouseY/10-.047,0);
+	
+	
+	//send matrix and color uniforms
+	gl.uniformMatrix4fv(uMatrix, false, flatten(matrix));
+	gl.uniform4fv(uColor, flatten(vec4(1.0,0.0,0.0,1.0))); //pass color to uniform
+	
+	//draw array
+    gl.drawArrays(gl.TRIANGLE_FAN, 8,4);
+	
+	mouseWait--; //decrement mouse moving timer
+	
+	//----------draw cat triangle----------------
+	//move cat
+	if(pressedUp == true){
+		//move the cat the correct direction depending on where it's facing
+		if(facing == "right"){
+			playerX++;
+		} else if (facing == "left"){
+			playerX--;
+		} else if (facing == "up"){
+			playerY++;
+		} else if (facing == "down"){
+			playerY--;
+		}
+		pressedUp = false;
+	}
+	
+	//wrap cat around if it tried to go too far
+	if(playerX < 1){
+		playerX = 20;
+	} else if(playerY < 1){
+		playerY = 20;
+	} else if(playerX > 20){
+		playerX = 1;
+	} else if(playerY > 20){
+		playerY = 1;
+	}
+	
+	//turn cat and record what direction it is facing
+	if(pressedLeft == true){
+		playerAngle = playerAngle + 90; //rotate 90 degrees
+		pressedLeft = false;
+		if(facing == "right"){ //change the way the cat is facing based on where it turns
+			facing = "up";
+		} else if (facing == "left"){
+			facing = "down";
+		} else if (facing == "up"){
+			facing = "left";
+		} else if (facing == "down"){
+			facing = "right";
+		}
+	}
+	if(pressedRight== true){
+		playerAngle = playerAngle - 90; //rotate 90 degrees
+		pressedRight = false;
+		if(facing == "left"){ //change the way the cat is facing based on where it turns
+			facing = "up";
+		} else if (facing == "right"){
+			facing = "down";
+		} else if (facing == "down"){
+			facing = "left";
+		} else if (facing == "up"){
+			facing = "right";
+		}
+	}
+	
+	//create rotate cat matrix
+	matrix1 = rotatez(playerAngle);
+	
+	//create matrix for translating cat to correct location
+	matrix2 = translate(playerX/10-.047,playerY/10-.047,0);
+	
+	matrix3 = multiply(translate(-1,-1,0),matrix1);
+	
+	//combine matrices
+	matrix = multiply(matrix2,matrix3);
+	
+	//send matrix and color uniforms
+	gl.uniformMatrix4fv(uMatrix, false, flatten(matrix));
+	gl.uniform4fv(uColor, flatten(vec4(1.0,0.0,0.0,1.0))); //pass color to uniform
+	
+	//draw array
+    gl.drawArrays(gl.TRIANGLE_FAN, 12,3);
+	
+	if(mouseX != playerX || mouseY != playerY)	//only draw next frame if the cat didnt win
+		requestAnimationFrame(draw); //do it again
+}
+
+function keyPress(event){
+	if(event.which == 38){
+		pressedUp = true;
+	} else if (event.which == 37){
+		pressedLeft = true;
+	} else if (event.which == 39){
+		pressedRight = true;
+	}
+}
+
+</script>
+
+</head>
+
+<!-- draw scene -->
+<body onload="main()" onkeydown="keyPress(event)">
+
+<!-- canvas for drawing scene -->
+<canvas id="gl-canvas" width="600" height="600"></canvas>
+
+</body>
+
+</html>

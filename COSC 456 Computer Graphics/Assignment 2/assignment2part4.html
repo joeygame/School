@@ -1,0 +1,150 @@
+<!--this is a painting program created by joey fazekas -->
+
+<html>
+
+<head>
+
+<!-- script files for webgl set up and math operations -->
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="init-shaders.js"></script>
+<script type="text/javascript" src="math.js"></script>
+
+<!-- vertex shader -->
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 aPosition;       //vertex coordinate
+attribute vec4 aColor;
+varying vec4 vColor;
+void main()
+{
+	gl_Position = aPosition;    //pass vertex coordinate to gl_Position
+	gl_PointSize = 10.0;	//set point size
+	
+	vColor = aColor; //pass value from color array buffer
+}
+</script>
+
+<!-- fragment shader -->
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;        //medium float precision
+varying vec4 vColor;				//uniform fragment color
+void main()
+{	
+    gl_FragColor = vColor;  	//use varying fragment color 
+}
+</script>
+
+<script>
+//global variables
+var gl;
+var count = 0; //number of points
+
+//set these variable specifically to global so they can be used in other functions
+var program;
+var vertexBuffer;
+var aPosition;
+var colorBuffer;
+var aColor;
+
+var drawingNow = false; //this is true when the mouse clicks to draw
+
+function main()
+{
+    //set up webgl
+    canvas = document.getElementById("gl-canvas");
+    gl = WebGLUtils.setupWebGL(canvas);
+    
+	//create vertices and color array
+	vertices =  [];	
+	colors = [];
+	
+	
+    //set up shaders
+    program = initShaders(gl, "vertex-shader", "fragment-shader");
+    gl.useProgram(program);
+	
+    //canvas color is black, clear canvas
+    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    //set view port to canvas
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    colorBuffer = gl.createBuffer();
+    vertexBuffer = gl.createBuffer();
+}
+
+//on click either release or start drawing
+function clickEvent(){
+	drawingNow = !drawingNow;
+}
+
+function dragEvent(event){
+	if(drawingNow){ //only run if it should be drawing
+	count++; //increment count of dots
+	
+	//calculate position
+	var xPos = 2*event.clientX/550-1;
+	var yPos = ((2*event.clientY)/(-550))+1;
+	
+	//calculate colors from slider input
+	var r = document.getElementById("redColor").value;
+	var g = document.getElementById("greenColor").value;
+	var b = document.getElementById("blueColor").value;
+	
+	//push new values to arrays
+	vertices.push(vec2(xPos,yPos));
+	colors.push(vec3(r,g,b));
+	
+	//create vertex buffer and bind it
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+
+    //connect vertex bufffer to attribute variable aPosition
+    aPosition = gl.getAttribLocation(program, "aPosition");
+    gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(aPosition);
+	
+    //buffer vertices into vertex buffer    
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+	
+    //create color buffer and bind it
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+
+    //connect color bufffer to attribute variable aColor
+	aColor = gl.getAttribLocation(program, "aColor");
+    gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(aColor);
+
+    //buffer color vertices into vertex buffer
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+
+    gl.clear(gl.COLOR_BUFFER_BIT); //clear canvas
+	
+	
+	gl.drawArrays(gl.POINTS, 0, count); //draw all the points in the array
+	}
+}
+
+
+</script>
+	
+</head>
+
+
+<!-- draw scene -->
+<body onload="main()">
+
+<!-- canvas for drawing scene -->
+<canvas onclick="clickEvent()" onmousemove="dragEvent(event)" id="gl-canvas" width="550" height="550"></canvas>
+
+<!-- Sliders for chosing color -->
+<p> 
+Red <input id = "redColor" type = "range" min = "0" max = "1" step = ".001" value = ".5">
+Green <input id = "greenColor" type = "range" min = "0" max = "1" step = ".001" value = ".5">
+Blue <input id = "blueColor" type = "range" min = "0" max = "1" step = ".001" value = ".5">
+</p>
+
+</body>
+
+</html>
+
+
+
