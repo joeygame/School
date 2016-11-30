@@ -1,0 +1,449 @@
+<!-- Joey Fazekas
+	COSC456 Graphics Game Program
+	Assignment 3
+-->
+
+<html>
+
+<head>
+
+<!-- script files for webgl set up and math operations -->
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="init-shaders.js"></script>
+<script type="text/javascript" src="math.js"></script>
+
+<!-- vertex shader -->
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 aPosition;       //vertex coordinate
+uniform mat4 uMatrix;
+void main()
+{
+	gl_Position = uMatrix*aPosition; //apply matrix
+	gl_PointSize = 2.0;	//set point size
+	
+    gl_Position.x = 2.0*gl_Position.x/600.0 - 1.0;    //scale x and y to
+    gl_Position.y = 2.0*gl_Position.y/700.0 - 1.0;    //standard view space
+    gl_Position.z = 0.0;
+    gl_Position.w = 1.0;
+}
+</script>
+
+<!-- fragment shader -->
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;                     //medium float precision
+uniform vec4 uColor;
+void main()
+{
+    gl_FragColor = uColor; //fragment color is red
+}
+</script>
+
+<script>
+//global variables
+var gl;
+var uMatrix;
+var matrix;
+var playerX = 200;
+var playerY = 200;
+var direction;
+var player2X = 400;
+var player2Y = 200;
+var direction2;
+var astX = new Array();
+var astY = new Array();
+var astXT = new Array();
+var astYT = new Array();
+var astRot = new Array();
+var astRotT = new Array();
+var astColor = new Array();
+var score = 0;
+var lives = 3;
+var starX = new Array();
+var starY = new Array();
+var starYT = new Array();
+var enemyX = 700;
+var shooting = false;
+var shootingTimer = 0;
+var shipTimer = 0;
+
+//main drawing function 
+function main()
+{
+    vertices =        //vertices of objects within
+    [
+		//heart shape
+        vec2(0,-1),
+        vec2(-1,0),
+        vec2(-.5,1),
+        vec2(0.0,.5),
+        vec2(.5,1),
+        vec2(1,0.0),
+		//ship shape
+        vec2(-1,-1),
+        vec2(-.5,0),
+        vec2(0,-1),
+        vec2(-0.5,-1),
+        vec2(0,.6),
+        vec2(.5,-1),
+        vec2(1.0,-1.0),
+        vec2(.5,0),
+        vec2(0,-1),
+		//beam shape
+		vec2(-.01,.01),
+		vec2(.01,.01),
+		vec2(.01,-1),
+		vec2(-.01,-1)
+    ];
+	
+	//create 10 asteroid "blobs" 
+	for(var i=0; i<10; i++){
+		makeBlob(vertices, 0, 0, 1, 20);
+	}
+	//create random X values for ateroids
+	for(var i=0; i<10; i++){
+		astX.push(Math.random()*600);
+	}
+	//start all asteroids at 750 = y
+	for(var i=0; i<10; i++){
+		astY.push(750 + Math.random()*500);
+	}
+	//start all rotations at 0 degrees
+	for(var i=0; i<10; i++){
+		astRot.push(0);
+	}
+	//rotations change by random amount
+	for(var i=0; i<10; i++){
+		var rand = Math.random()*2 +.5;
+		if(Math.random()>.5){
+			astRotT.push(rand);
+		} else {
+			astRotT.push(-rand);
+		}
+	}
+	//decide random colors
+	for(var i=0; i<10; i++){
+		var r = Math.random()*40 + 120;
+		var g = Math.random()*80 + 10;
+		var b = g/2;
+		astColor.push(vec4(r/255,g/255,b/255,1.0));
+	}
+	//create tranformation variables to decide how the asteroids act
+	for(var i=0; i<10; i++){
+		if(astX[i] < 300){
+			astXT.push(Math.random());
+		} else {
+			astXT.push(-1*Math.random());
+		}
+	}
+	for(var i=0; i<10; i++){
+		astYT.push(Math.random()*3+2);
+	}
+	
+	//create random star locations
+	for(var i = 0; i<100;i++){
+		starX.push(Math.random()*600);
+		starY.push(Math.random()*700);
+		starYT.push(Math.random());
+	}
+	
+    //set up webgl
+    var canvas = document.getElementById("gl-canvas");
+    gl = WebGLUtils.setupWebGL(canvas);
+    
+    //set up shaders
+    var program = initShaders(gl, "vertex-shader", "fragment-shader");
+    gl.useProgram(program);
+
+    //create vertex buffer and bind it
+    var vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+
+    //connect vertex bufffer to attribute variable aPosition
+    var aPosition = gl.getAttribLocation(program, "aPosition");
+    gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(aPosition);
+	
+    //buffer vertices into vertex buffer    
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+
+    //canvas color is black, clear canvas
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+    //set view port to canvas
+    gl.viewport(0, 0, canvas.width, canvas.height);
+	
+	//conntect to uniform matrix and uniform color
+	uMatrix = gl.getUniformLocation(program, "uMatrix");
+	uColor = gl.getUniformLocation(program, "uColor");
+	
+	//display score and lives 
+	document.getElementById('output').innerHTML = 
+		"Score: " + score + "<br />Lives: " + lives;
+	//start drawing the animated shapes
+	draw();
+}
+
+function draw(){
+
+    gl.clear(gl.COLOR_BUFFER_BIT);//clear canvas
+	
+	//-------------this block controls the background stars---------------------------------
+	for(var i = 0; i<100; i++){
+		//move each star based on their transformation values
+		starY[i] = starY[i]-starYT[i];
+		
+		//reset to top if at bottom
+		if(starY[i] < 0){
+			starY[i] = 700;
+		}
+		//create matrix for translating
+		matrix = translate(starX[i],starY[i],0);
+	
+		//send matrix and color uniforms
+		gl.uniformMatrix4fv(uMatrix, false, flatten(matrix));
+		gl.uniform4fv(uColor, flatten(
+			vec4(starYT[i]+.05,starYT[i]+.05,starYT[i]+.05,1.0)
+			)); //pass color to uniform
+	
+		//draw array
+		gl.drawArrays(gl.POINTS, 3, 1);
+	}
+	
+	//-------------this block controls asteroids falling----------------------------------
+	for(var i = 0; i<10; i++){
+		//move each asteroid based on their transformation values
+		astY[i]= astY[i] - astYT[i];
+		astX[i] = astX[i] + astXT[i];
+		astRot[i] = astRot[i] + astRotT[i];
+		
+		
+		//calculate distance to player1
+		var dist1 = Math.sqrt(Math.pow(astX[i]-playerX,2) + Math.pow(astY[i]+10-playerY,2))
+		//calculate distance to player2
+		var dist2 = Math.sqrt(Math.pow(astX[i]-player2X,2) + Math.pow(astY[i]+10-player2Y,2))
+		
+		//check if asteroid is hitting a ship
+		if(dist1<30 || dist2<30){
+			lives--;
+			astY[i] = 750;
+			var randomX = Math.random()*600;
+			astX[i] = randomX;
+			astRot[i] = 0;
+			if(randomX < 300){
+				astXT[i] = Math.random();
+			} else {
+				astXT[i] = -Math.random();
+			}
+		}
+		
+		
+		//reset asteroids to top, and add to the score
+		if(astY[i] < - 20){
+			score++;
+			document.getElementById('output').innerHTML = 
+				"Score: " + score + "<br />Lives: " + lives;
+			astY[i] = 750;
+			var randomX = Math.random()*600;
+			astX[i] = randomX;
+			astRot[i] = 0;
+			if(randomX < 300){
+				astXT[i] = Math.random();
+			} else {
+				astXT[i] = -Math.random();
+			}
+		}
+		//create matrix for translating AND scaling
+		matrix = multiply(translate(astX[i],astY[i],0), multiply(rotatez(astRot[i]),scaling(20,20,0.0)));
+	
+		//send matrix and color uniforms
+		gl.uniformMatrix4fv(uMatrix, false, flatten(matrix));
+		gl.uniform4fv(uColor, flatten(astColor[i])); //pass color to uniform
+	
+		//draw array
+		gl.drawArrays(gl.TRIANGLE_FAN, 19+(20*i), 20);
+	}
+	
+	//-------------this block controls the player---------------------------------
+	var delta = 4; //set amount to move
+	
+	//move player in the pressed direction if it doesnt let him leave the screen
+	if(direction == 68){
+		if(playerX < 590)
+			playerX = playerX + delta;
+	}else if(direction == 87){
+		if(playerY < 620)
+			playerY = playerY + delta;
+	}else if(direction == 83){
+		if(playerY > 10)
+			playerY = playerY - delta;
+	}else if(direction == 65){
+		if(playerX > 10)
+			playerX = playerX - delta;
+	}
+	
+	//create matrix for translating
+	matrix = multiply(translate(playerX,playerY,0),scaling(20,20,0));
+
+	//send matrix and color uniforms
+	gl.uniformMatrix4fv(uMatrix, false, flatten(matrix));
+	gl.uniform4fv(uColor, flatten(vec4(0.0,0.0,1.0,1.0))); //pass color to uniform
+
+	//draw array
+	gl.drawArrays(gl.TRIANGLES, 6, 9);
+
+	//-------------this block controls the second player---------------------------------
+	var delta = 4; //set amount to move
+	
+	//move player in the pressed direction if it doesnt let him leave the screen
+	if(direction2 == 39){
+		if(player2X < 590)
+			player2X = player2X + delta;
+	}else if(direction2 == 38){
+		if(player2Y < 620)
+			player2Y = player2Y + delta;
+	}else if(direction2 == 40){
+		if(player2Y > 10)
+			player2Y = player2Y - delta;
+	}else if(direction2 == 37){
+		if(player2X > 10)
+			player2X = player2X - delta;
+	}
+	
+	//create matrix for translating
+	matrix = multiply(translate(player2X,player2Y,0),scaling(20,20,0));
+
+	//send matrix and color uniforms
+	gl.uniformMatrix4fv(uMatrix, false, flatten(matrix));
+	gl.uniform4fv(uColor, flatten(vec4(0.0,1.0,0.0,1.0))); //pass color to uniform
+
+	//draw array
+	gl.drawArrays(gl.TRIANGLES, 6, 9);
+	
+	//-------------this block controls life hearts---------------------------------
+	for(var i = 0; i<lives; i++){
+		//create matrix for translating
+		matrix = multiply(translate(20 + i*40,20,0),scaling(20,20,0));
+	
+		//send matrix and color uniforms
+		gl.uniformMatrix4fv(uMatrix, false, flatten(matrix));
+		gl.uniform4fv(uColor, flatten(vec4(1.0,0.3,0.3,1.0))); //pass color to uniform
+	
+		//draw array
+		gl.drawArrays(gl.TRIANGLE_FAN, 0, 6);
+	}
+	
+	//-------------this block controls the enemy ship---------------------------------
+	//add the the timer that decides when the enemy ship should come
+	shipTimer++;
+	//move the ship towards the player if its the right time
+	if(shipTimer > 1500 && shipTimer < 2500){
+		var delta = 1;
+		if(enemyX > playerX+2){
+			enemyX = enemyX - delta;
+		} else if  (enemyX < playerX-2){
+			enemyX = enemyX + delta;
+		}
+	}else{
+		//move the ship off screen 
+		if(enemyX <700){
+			enemyX++;
+		}
+	}
+	//reset timer
+	if(shipTimer> 3000){
+		score = score + 100;
+		shipTimer = 0;
+	}
+		
+	//create matrix for translating
+	matrix = multiply(translate(enemyX,650,0),multiply(rotatez(180),scaling(40,40,0)));
+
+	//send matrix and color uniforms
+	gl.uniformMatrix4fv(uMatrix, false, flatten(matrix));
+	gl.uniform4fv(uColor, flatten(vec4(1.0,1.0,1.0,1.0))); //pass color to uniform
+
+	//draw array
+	gl.drawArrays(gl.TRIANGLES, 6, 9);
+	
+	//-------------this block controls the enemy ship's laser beam------------------------------
+	shootingTimer++;
+	
+	if(shootingTimer > 300){
+		shooting = true;
+	}else{
+		shooting = false;
+	}
+		
+	if(shootingTimer > 400)
+		shootingTimer = 0;
+		
+	if(shooting && (Math.abs(playerX-enemyX) < 10 || Math.abs(player2X-enemyX) < 10)){
+		shootingTimer = 0;
+		lives--;
+		shipTimer = 0;
+	}
+	
+	//create matrix for translating
+	matrix = multiply(translate(enemyX,650,0),scaling(600,700,0));
+
+	//send matrix and color uniforms
+	gl.uniformMatrix4fv(uMatrix, false, flatten(matrix));
+	gl.uniform4fv(uColor, flatten(vec4(1.0,0.0,0.0,1.0))); //pass color to uniform
+
+	//draw array if shooting
+	if(shooting)
+		gl.drawArrays(gl.TRIANGLE_FAN, 15, 4);
+	
+	if(lives>=0){
+		requestAnimationFrame(draw); //do it again
+	}
+}
+
+//this function makes a disk with specified number of triangles,
+//and with a specified radius and position
+function makeBlob(vertexArray, cx, cy, radius, count){
+	var theta = 2*Math.PI/count; //creates space bet
+	
+	//this loops creates vertices for a circle with 100 points
+	for(var i = 0; i < count; i++){
+		var rand = Math.random()*.3;
+		var x = radius*Math.cos(i*theta) + cx + rand; //generate x coordinate
+		var y = radius*Math.sin(i*theta) + cy + rand; //generate y coordinate
+		vertexArray.push(vec2(x,y)); //add to array
+	}
+	
+}
+
+
+function keyPress(event) {
+	if(event.keyCode == 83 || event.keyCode == 68 || event.keyCode == 65 || event.keyCode == 87){
+		direction = (event.keyCode);
+	}
+	if(event.keyCode == 37 || event.keyCode == 38 || event.keyCode == 39 || event.keyCode == 40){
+		direction2 = (event.keyCode);
+	}
+}
+function keyRelease(event) {
+	if(event.keyCode == direction){
+		direction = false;
+	}
+	if(event.keyCode == direction2){
+		direction2 = false;
+	}
+}
+document.addEventListener("keydown", keyPress);
+document.addEventListener("keyup", keyRelease);
+</script>
+
+</head>
+
+<!-- draw scene -->
+<body onload="main()">
+
+<!-- canvas for drawing scene -->
+<canvas id="gl-canvas" width="600" height="700"></canvas>
+<p id="output">
+</p>
+</body>
+
+</html>
