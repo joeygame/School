@@ -1,0 +1,194 @@
+<!-- This program draws a 5x5 grid of shapes -->
+
+<html>
+
+<head>
+
+<!-- script files for webgl set up and math operations -->
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="init-shaders.js"></script>
+<script type="text/javascript" src="math.js"></script>
+
+<!-- vertex shader -->
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 aPosition;       //vertex coordinate
+attribute vec4 aColor;
+varying vec4 vColor;
+void main()
+{
+    gl_Position.x = 2.0*aPosition.x/600.0 - 1.0;    //scale x and y to
+    gl_Position.y = 2.0*aPosition.y/600.0 - 1.0;    //standard view space
+    gl_Position.z = 0.0;
+    gl_Position.w = 1.0;
+	
+	vColor = aColor;
+}
+</script>
+
+<!-- fragment shader -->
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;                     //medium float precision
+varying vec4 vColor;
+void main()
+{
+    gl_FragColor = vColor; //pass in color from array
+}
+</script>
+
+<script>
+//main drawing function 
+function main()
+{
+    var vertices =        //vertices of objects within
+    [
+    ];
+	
+    var colors =        //colors of vertices
+    [
+    ];
+	
+	//just a test value
+	makeDisk(vertices, colors, 60,540,60,5,vec3(1.0,1.0,1.0));
+	
+    //set up webgl
+    var canvas = document.getElementById("gl-canvas");
+    var gl = WebGLUtils.setupWebGL(canvas);
+    
+    //set up shaders
+    var program = initShaders(gl, "vertex-shader", "fragment-shader");
+    gl.useProgram(program);
+
+    //create vertex buffer and bind it
+    var vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+
+    //connect vertex bufffer to attribute variable aPosition
+    var aPosition = gl.getAttribLocation(program, "aPosition");
+    gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(aPosition);
+	
+    //buffer vertices into vertex buffer    
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+	
+    //create color buffer and bind it
+    var colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+
+    //connect color bufffer to attribute variable aColor
+	var aColor = gl.getAttribLocation(program, "aColor");
+    gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(aColor);
+
+    //buffer color vertices into vertex buffer
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+
+    //canvas color is black, clear canvas
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    //set view port to canvas
+    gl.viewport(0, 0, canvas.width, canvas.height);
+
+	//runs through a 5x5 and creates random shapes
+	for (i = 0; i < 5; i++){ //vertical
+		for (j = 0; j < 5; j++){ //horizontal
+			var rand = Math.random(); //choose a random num
+			if(rand <= .25){ //25 percent chance to make a triangle
+				//clear the arrays
+				colors.length = 0;
+				vertices.length = 0;
+				//choose cooredinates
+				var posx = j*120 + 60;
+				var posy = (5-i)*120 -60;
+				//create new obj
+				makeDisk(vertices, colors, posx,posy,45,3,vec3(Math.random(),Math.random(),Math.random()));
+				
+				gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+				gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+				
+				gl.drawArrays(gl.TRIANGLE_FAN, 0, 3);
+				
+			} else if(rand <= .5){ //25% chance of making a square
+				//clear the arrays
+				colors.length = 0;
+				vertices.length = 0;
+				//choose cooredinates
+				var posx = j*120 + 60;
+				var posy = (5-i)*120 -60;
+				//create new obj
+				makeDisk(vertices, colors, posx,posy,45,4,vec3(Math.random(),Math.random(),Math.random()));
+				
+				gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+				gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+				
+				gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+			} else if(rand <= .75){//25% chance of making a pentagon
+				//clear the arrays
+				colors.length = 0;
+				vertices.length = 0;
+				//choose cooredinates
+				var posx = j*120 + 60;
+				var posy = (5-i)*120 -60;
+				//create new obj
+				makeDisk(vertices, colors, posx,posy,45,5,vec3(Math.random(),Math.random(),Math.random()));
+				
+				gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+				gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+				
+				gl.drawArrays(gl.TRIANGLE_FAN, 0, 5);
+			
+			} else { //25% chance of making a circle
+				//clear the arrays
+				colors.length = 0;
+				vertices.length = 0;
+				//choose cooredinates
+				var posx = j*120 + 60;
+				var posy = (5-i)*120 -60;
+				//create new obj
+				makeDisk(vertices, colors, posx,posy,45,60,vec3(Math.random(),Math.random(),Math.random()));
+				
+				gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+				gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+				
+				gl.drawArrays(gl.TRIANGLE_FAN, 0, 60);
+			}
+		}
+	}
+}
+
+function makeDisk(vertexArray, colorArray, cx, cy, radius, count, color){
+	var theta = 2*Math.PI/count; //creates space bet
+	
+	//this loops creates vertices for a circle with 100 points
+	for(var i = 0; i < count; i++){
+		var x = radius*Math.cos(i*theta) + cx; //generate x coordinate
+		var y = radius*Math.sin(i*theta) + cy; //generate y coordinate
+		vertexArray.push(vec2(x,y)); //add to array
+	}
+	for(var i = 0; i < count; i++){
+		colorArray.push(color); //add yellow color
+	}
+	
+}
+
+</script>
+
+</head>
+
+<!-- draw scene -->
+<body onload="main()">
+
+<!-- canvas for drawing scene -->
+<canvas id="gl-canvas" width="600" height="600"></canvas>
+
+</body>
+
+</html>

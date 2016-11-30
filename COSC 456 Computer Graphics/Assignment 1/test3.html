@@ -1,0 +1,263 @@
+<!-- this draws a 3 rotating sierpenski triangles,
+and a circle that moves around the edges of the canvas.
+Created by Joey/Joseph Fazekas For Computer Graphics
+-->
+<html>
+<head>
+<!--scripts import  for webgl set up and math operations-->
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="init-shaders.js"></script>
+<script type="text/javascript" src="math.js"></script>
+
+<!-- vertex shader --> 
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 aPosition; //vertex coordinates
+//all the uniform variables for changing the objects
+uniform float uObject; //which object it is
+uniform float uAngle;  //angle of rotation
+uniform float uxPos;	//x-position of circle
+uniform float uyPos;	//y-position of circle
+void main(){
+	if(uObject == 1.0){	
+	float sine = sin(uAngle);	//calculate for rotation
+	float cosine = cos(uAngle);
+	
+	//math operation to rotate the points by a certain angle
+	gl_Position.x = cosine*aPosition.x - sine*aPosition.y;
+	gl_Position.y = sine*aPosition.x + cosine*aPosition.y;
+	gl_Position.z = 0.0;
+	gl_Position.w = 1.0;
+	
+	//move the shape
+	gl_Position.x = gl_Position.x;
+	gl_Position.y = gl_Position.y + 0.4;
+	}
+	if(uObject == 2.0){	
+	float sine = sin(uAngle);	//calculate for rotation
+	float cosine = cos(uAngle);
+	
+	//math operation to rotate the points by a certain angle
+	gl_Position.x = cosine*aPosition.x - sine*aPosition.y;
+	gl_Position.y = sine*aPosition.x + cosine*aPosition.y;
+	gl_Position.z = 0.0;
+	gl_Position.w = 1.0;
+	
+	//move the shape
+	gl_Position.x = gl_Position.x - 0.4;
+	gl_Position.y = gl_Position.y - 0.4;
+	}
+	if(uObject == 3.0){	
+	float sine = sin(uAngle);	//calculate for rotation
+	float cosine = cos(uAngle);
+	
+	//math operation to rotate the points by a certain angle
+	gl_Position.x = cosine*aPosition.x - sine*aPosition.y;
+	gl_Position.y = sine*aPosition.x + cosine*aPosition.y;
+	gl_Position.z = 0.0;
+	gl_Position.w = 1.0;
+	
+	//move the shape
+	gl_Position.x = gl_Position.x + 0.4;
+	gl_Position.y = gl_Position.y - 0.4;
+	}
+	if(uObject == 4.0){
+	//move the shape by X and y Pos values
+	gl_Position.x = aPosition.x + uxPos;
+	gl_Position.y = aPosition.y + uyPos;
+	gl_Position.z = 0.0;
+	gl_Position.w = 1.0;
+	}
+}
+</script>
+
+<!-- fragment shader -->
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;    //medium float precision
+uniform vec4 uColor;	//uniform color, so i can change it for each shape
+void main()
+{
+    gl_FragColor = uColor;	//pass uColor
+}
+</script>
+
+<script>
+var gl;	//webgl context
+
+//initialize all variables for the uniform vars
+var uAngle; //rotation variables
+var angle;
+var angle2;
+var angle3;
+var uObject;	//defines which object it is for vertex
+var uColor;
+var xPos, uxPos;	//defines position variables for circle
+var yPos, uyPos;
+var direction;		//defines direction for circle movement
+
+function main(){
+	//set up webgl
+	var canvas = document.getElementById("gl-canvas");	
+	gl = WebGLUtils.setupWebGL(canvas);
+	
+	//set up shaders
+	var program = initShaders(gl, "vertex-shader", "fragment-shader");
+	gl.useProgram(program);
+	
+	//create vertex buffer and bind it
+	var vertexBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+	
+	//connect vertex buffer to aPosition
+	var aPosition = gl.getAttribLocation(program, "aPosition");
+	gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(aPosition);
+	
+	//create vertices array and fill it with a sierpenski triangle and a circle
+	var vertices = [];
+	makeTriangles(vec2(-0.2,-0.2), vec2(0.0,0.2), vec2(0.2,-0.2), 4, vertices);
+	makeDisk(vertices, 0.0, 0.0, 0.1, 100);
+	
+	//buffer vertices into vertex buffer
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+	
+	//connect uniforms for shape object color and position
+	uAngle = gl.getUniformLocation(program, "uAngle");
+	uObject = gl.getUniformLocation(program, "uObject");
+	uColor = gl.getUniformLocation(program, "uColor");
+	uxPos = gl.getUniformLocation(program, "uxPos");
+	uyPos = gl.getUniformLocation(program, "uyPos");
+	
+	//set default starting values for uniforms
+	angle = 0.0;
+	angle2 = 0.0;
+	angle3 = 0.0;
+	xPos = 0.9;
+	yPos = 0.9;
+	direction = "west"; //set starting direction to west
+	
+	//set viewport to canvas size
+	gl.viewport(0,0,canvas.width,canvas.height);
+	
+	//canvas color is black
+	gl.clearColor(0.0,0.0,0.0,1.0);
+	
+	//start drawing the animated shapes
+	draw();
+}
+
+function draw(){
+	gl.clear(gl.COLOR_BUFFER_BIT); //clear canvas
+	
+	angle = angle - 1.0; //decrement angle, makes triangle rotate
+	
+	gl.uniform1f(uAngle, angle*Math.PI/180); //pass angle in Radians to uniform
+	gl.uniform1f(uObject, 1.0); //pass which object it is
+	gl.uniform4fv(uColor, flatten(vec4(1.0,0.0,0.0,1.0))); //pass color to uniform
+	
+	
+	gl.drawArrays(gl.TRIANGLES,0,243); //draw sierpenski triangle
+	
+	angle2 = angle2 + 2.0; //decrement angle, makes triangle rotate
+	
+	gl.uniform1f(uAngle, angle2*Math.PI/180); //pass angle in Radians to uniform
+	gl.uniform1f(uObject, 2.0); //pass which object it is
+	gl.uniform4fv(uColor, flatten(vec4(0.0,1.0,0.0,1.0))); //pass color to uniform
+	
+	gl.drawArrays(gl.TRIANGLES,0,243); //draw sierpenski triangle
+	
+	
+	angle3 = angle3 + 3.0; //decrement angle, makes triangle rotate
+	
+	gl.uniform1f(uAngle, angle3*Math.PI/180); //pass angle in Radians to uniform
+	gl.uniform1f(uObject, 3.0); //pass which object it is
+	gl.uniform4fv(uColor, flatten(vec4(0.0,0.0,1.0,1.0))); //pass color to uniform
+	
+	gl.drawArrays(gl.TRIANGLES,0,243); //draw sierpenski triangle
+	
+	
+	//this part is to draw the moving ball
+	
+	 //change direction when circle reaches corner
+	if(xPos <= -0.9 && yPos <= 0.9){ //change to south when circle reaches top-left
+		direction = "south";
+	}
+	if(xPos <= -0.9 && yPos <= -0.9){ //change to east when circle reaches bottom-left
+		direction = "east";
+	}
+	if(xPos >= 0.9 && yPos <= -0.9){  //change to north when circle reaches bottom-right
+		direction = "north";
+	}
+	if(xPos >= 0.9 && yPos >= 0.9){ //change to west when circle reaches top right
+		direction = "west";
+	}
+	
+	//go the direction specified by direction variable
+	if(direction == "west"){
+		xPos = xPos - 0.01;
+	} else if(direction == "south"){
+		yPos = yPos - 0.01;
+	} else if(direction == "east"){
+		xPos = xPos + 0.01;
+	} else if(direction == "north"){
+		yPos = yPos + 0.01;
+	}
+
+	//passing variable to uniform variables
+	gl.uniform1f(uObject, 4.0); //pass which object this is
+	gl.uniform1f(uxPos, xPos); //pass xPos and y Pos
+	gl.uniform1f(uyPos, yPos); 
+	gl.uniform4fv(uColor, flatten(vec4(1.0,1.0,0.0,1.0))); //pass color
+	
+	gl.drawArrays(gl.TRIANGLE_FAN,243,100); //draw disk/circle
+	
+	requestAnimationFrame(draw); //do it again
+}
+
+//this function creates a sierpenski triangle with a specified number of levels
+function makeTriangles(a,b,c,count,array){
+	if (count == 0)
+		triangle(a,b,c,array); //add vertices to array
+	else {
+		var ab = scale(0.5, add(a,b)); //find midpoints of vertices
+		var bc = scale(0.5, add(b,c));
+		var ac = scale(0.5, add(a,c));
+		makeTriangles(a, ab, ac, count-1, array); //draw smaller triangles
+		makeTriangles(b, ab, bc, count-1, array); //based on those midpoints
+		makeTriangles(c, ac, bc, count-1, array);
+	}
+}
+
+//this functiom simply adds the vertices from makeTriangle into an array
+function triangle(a,b,c,array){
+	array.push(a);
+	array.push(b);
+	array.push(c);
+}
+
+//this function makes a disk with specified number of triangles,
+//and with a specified radius and position
+function makeDisk(vertexArray, cx, cy, radius, count){
+	var theta = 2*Math.PI/count; //creates space bet
+	
+	//this loops creates vertices for a circle with 100 points
+	for(var i = 0; i < count; i++){
+		var x = radius*Math.cos(i*theta) + cx; //generate x coordinate
+		var y = radius*Math.sin(i*theta) + cy; //generate y coordinate
+		vertexArray.push(vec2(x,y)); //add to array
+	}
+	
+}
+
+</script>
+
+</head>
+
+<!-- draw the scene -->
+<body onload="main()">
+
+<!-- create the canvas -->
+<canvas id="gl-canvas" width="600" height="600"></canvas>
+
+</body>
+
+</html>

@@ -1,0 +1,192 @@
+<!-- this draws 20 bouncing balls,
+using real physics equations and varying "bounciness"
+Created by Joey/Joseph Fazekas For Computer Graphics
+-->
+<html>
+<head>
+<!--scripts import  for webgl set up and math operations-->
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="init-shaders.js"></script>
+<script type="text/javascript" src="math.js"></script>
+
+<!-- vertex shader --> 
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 aPosition; //vertex coordinates
+//all the uniform variables for changing the objects
+uniform float uObject; //which object it is
+uniform float uVelocity; //speed of ball
+uniform float uTime;	//time for physiscs-equation
+void main(){
+	for(float i = 0.0; i<20.0;i++){
+	if(uObject == i){
+	//compute x, y coordinates of ball
+	gl_Position.x = aPosition.x;
+	gl_Position.y = aPosition.y + uVelocity*uTime - 4.9*uTime*uTime;
+	
+	//move ball
+	gl_Position.x = gl_Position.x + 20.0 + i*60.0;
+	gl_Position.y = gl_Position.y + 20.0;
+	}
+	}
+	
+	//scale to standard viewport
+	gl_Position.x = 2.0*gl_Position.x/1200.0-1.0;
+	gl_Position.y = 2.0*gl_Position.y/600.0-1.0;
+	gl_Position.z = 0.0;
+	gl_Position.w = 1.0;
+}
+</script>
+
+<!-- fragment shader -->
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;    //medium float precision
+uniform vec4 uColor;	//uniform color, so i can change it for each shape
+void main()
+{
+    gl_FragColor = uColor;	//pass uColor
+}
+</script>
+
+<script>
+var gl;	//webgl context
+
+//initialize all variables for the uniform vars
+var uObject;	//connector for which object it is for vertex
+var uColor;		//connector for color of vertices
+var uTime;		//connector for unform time
+var uVelocity;	//velocity unform connector
+var velocity;	//initial velocity
+var travelTime;	//time to hit ground
+var bounce;		//bounciness of ball
+var time;		//ball time
+var color;		//ball color
+
+function main(){
+	//set up webgl
+	var canvas = document.getElementById("gl-canvas");	
+	gl = WebGLUtils.setupWebGL(canvas);
+	
+	//set up shaders
+	var program = initShaders(gl, "vertex-shader", "fragment-shader");
+	gl.useProgram(program);
+	
+	//create vertex buffer and bind it
+	var vertexBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+	
+	//connect vertex buffer to aPosition
+	var aPosition = gl.getAttribLocation(program, "aPosition");
+	gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(aPosition);
+	
+	//create vertices array and fill it with a circle
+	var vertices = [];
+	makeDisk(vertices, 0.0, 0.0, 20, 100);
+	
+	//buffer vertices into vertex buffer
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+	
+	//connect uniforms for shape object color and position
+	uObject = gl.getUniformLocation(program, "uObject");
+	uColor = gl.getUniformLocation(program, "uColor");
+	
+	//set default starting values for velocity, all 100.0
+	velocity = [100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,
+	100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0,100.0];
+	
+	uVelocity = gl.getUniformLocation(program, "uVelocity");
+	gl.uniform1f(uVelocity, 100.0);
+	
+	//compute time to hit ground
+	travelTime = [];
+	
+	for(var i = 0; i<20; i++){
+		travelTime[i] = (100.0/4.9);
+	}
+	
+	//add random colors
+	color = [];
+	
+	for(var i = 0; i<20; i++){
+		color[i] = vec4(Math.random(),Math.random(),Math.random(),1.0);
+	}
+	
+	//bounciness of ball
+	bounce = [];
+	
+	for(var i=0; i<20; i++){
+		bounce[i] =(Math.random()*0.1+0.9);
+	}
+	
+	//connect to uniform uTime
+	uTime = gl.getUniformLocation(program, "uTime");
+	
+	//initial time
+	time = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,
+	0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
+	
+	
+	//set viewport to canvas size
+	gl.viewport(0,0,canvas.width,canvas.height);
+	
+	//canvas color is black
+	gl.clearColor(0.0,0.0,0.0,1.0);
+	
+	//start drawing the animated balls
+	draw();
+}
+
+function draw(){
+	gl.clear(gl.COLOR_BUFFER_BIT);
+	for(var i=0.0; i<20.0;i++){
+		//if ball has not hit ground
+		if (time[i] < travelTime[i]){
+			time[i] = time[i] + 0.2;
+		//if ball has hit ground start next bounce
+		}
+		else {
+			velocity[i] = bounce[i]*velocity[i];		//decrease init. velocity
+			gl.uniform1f(uVelocity, velocity[i]);	//send init. velocity to uVelocity
+			travelTime[i] = velocity[i]/4.9;
+			time[i]=0.0;
+		}
+		
+		gl.uniform4fv(uColor, flatten(color[i]));
+		gl.uniform1f(uTime, time[i]);
+		gl.uniform1f(uVelocity, velocity[i]);	//send init. velocity to uVelocity
+		gl.uniform1f(uObject, i);
+	
+		gl.drawArrays(gl.TRIANGLE_FAN, 0, 100);
+	}
+		
+	
+	requestAnimationFrame(draw); //do it again
+}
+
+//this function makes a disk with specified number of triangles,
+//and with a specified radius and position
+function makeDisk(vertexArray, cx, cy, radius, count){
+	var theta = 2*Math.PI/count; //creates space bet
+	
+	//this loops creates vertices for a circle with 100 points
+	for(var i = 0; i < count; i++){
+		var x = radius*Math.cos(i*theta) + cx; //generate x coordinate
+		var y = radius*Math.sin(i*theta) + cy; //generate y coordinate
+		vertexArray.push(vec2(x,y)); //add to array
+	}
+	
+}
+
+</script>
+
+</head>
+
+<!-- draw the scene -->
+<body onload="main()">
+
+<!-- create the canvas -->
+<canvas id="gl-canvas" width="1200" height="600"></canvas>
+
+</body>
+
+</html>

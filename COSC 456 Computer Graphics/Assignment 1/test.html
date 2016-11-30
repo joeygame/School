@@ -1,0 +1,179 @@
+<!-- This program draws a triangle -->
+
+<html>
+
+<head>
+
+<!-- script files for webgl set up and math operations -->
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="init-shaders.js"></script>
+<script type="text/javascript" src="math.js"></script>
+
+<!-- vertex shader -->
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 aPosition;       //vertex coordinate
+attribute vec4 aColor;
+varying vec4 vColor;
+void main()
+{
+    gl_Position.x = 2.0*aPosition.x/1200.0 - 1.0;    //scale x and y to
+    gl_Position.y = 2.0*aPosition.y/600.0 - 1.0;    //standard view space
+    gl_Position.z = 0.0;
+    gl_Position.w = 1.0;
+	
+	vColor = aColor;
+}
+</script>
+
+<!-- fragment shader -->
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;                     //medium float precision
+varying vec4 vColor;
+void main()
+{
+    gl_FragColor = vColor; //fragment color is red
+}
+</script>
+
+<script>
+//main drawing function 
+function main()
+{
+    var vertices =        //vertices of objects within
+    [
+		//the black land vertices
+        vec2(0,0),
+        vec2(0,300),
+        vec2(1200,300),
+        vec2(1200,0),
+		//house vertices
+        vec2(150,150),
+        vec2(150,450),
+        vec2(500,450),
+        vec2(500,150),
+		//house door vertices
+        vec2(275,150),
+        vec2(275,300),
+        vec2(400,300),
+        vec2(400,150),
+		//house roof vertices
+        vec2(125,450),
+        vec2(525,450),
+        vec2(325,550),
+		//tree trunk vertices
+        vec2(950,150),
+        vec2(950,400),
+        vec2(1000,400),
+        vec2(1000,150),
+		//tree leaf vertices
+        vec2(900,350),
+        vec2(1050,350),
+        vec2(975,550),
+    ];
+	
+    var colors =        //colors of vertices
+    [
+		//colors of land - black
+        vec3(0.0,0.0,0.0),
+        vec3(0.0,0.0,0.0),
+        vec3(0.0,0.0,0.0),
+        vec3(0.0,0.0,0.0),
+		//white house main rectangle
+        vec3(1.0,1.0,1.0),
+        vec3(1.0,1.0,1.0),
+        vec3(1.0,1.0,1.0),
+        vec3(1.0,1.0,1.0),
+		//red house door rectangle
+        vec3(1.0,0.0,0.0),
+        vec3(1.0,0.0,0.0),
+        vec3(1.0,0.0,0.0),
+        vec3(1.0,0.0,0.0),
+		//red house roof triangle
+        vec3(1.0,0.0,0.0),
+        vec3(1.0,0.0,0.0),
+        vec3(1.0,0.0,0.0),
+		//tree trunk brown
+        vec3(0.5,0.2,0.1),
+        vec3(0.5,0.2,0.1),
+        vec3(0.5,0.2,0.1),
+        vec3(0.5,0.2,0.1),
+		//tree lead dark green
+        vec3(0.0,0.3,0.0),
+        vec3(0.0,0.3,0.0),
+        vec3(0.0,0.3,0.0)
+    ];
+	
+	//create an angle for # of segments on a disc
+	var theta = 2*Math.PI/100;
+	
+	//this loops creates vertices for a circle with 100 points
+	for(var i = 0; i < 100; i++){
+		var x = 75*Math.cos(i*theta) + 700; //generate x coordinate
+		var y = 75*Math.sin(i*theta) + 450; //generate y coordinate
+		vertices.push(vec2(x,y)); //add to array
+	}
+	for(var i = 0; i < 100; i++){
+		colors.push(vec3(1.0,1.0,0.0)); //add yellow color
+	}
+	
+    //set up webgl
+    var canvas = document.getElementById("gl-canvas");
+    var gl = WebGLUtils.setupWebGL(canvas);
+    
+    //set up shaders
+    var program = initShaders(gl, "vertex-shader", "fragment-shader");
+    gl.useProgram(program);
+
+    //create vertex buffer and bind it
+    var vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+
+    //connect vertex bufffer to attribute variable aPosition
+    var aPosition = gl.getAttribLocation(program, "aPosition");
+    gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(aPosition);
+	
+    //buffer vertices into vertex buffer    
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+	
+    //create color buffer and bind it
+    var colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+
+    //connect color bufffer to attribute variable aColor
+	var aColor = gl.getAttribLocation(program, "aColor");
+    gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(aColor);
+
+    //buffer color vertices into vertex buffer
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+
+    //canvas color is black, clear canvas
+    gl.clearColor(0.5, 0.5, 1.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    //set view port to canvas
+    gl.viewport(0, 0, canvas.width, canvas.height);
+
+    //draw the objects in the scene
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4); //land
+    gl.drawArrays(gl.TRIANGLE_FAN, 4, 4);	//house
+    gl.drawArrays(gl.TRIANGLE_FAN, 8, 4);
+    gl.drawArrays(gl.TRIANGLES, 12, 3);
+    gl.drawArrays(gl.TRIANGLE_FAN, 15, 4); //tree
+    gl.drawArrays(gl.TRIANGLES, 19, 3);
+    gl.drawArrays(gl.TRIANGLE_FAN, 22, 100); //circle
+}
+</script>
+
+</head>
+
+<!-- draw scene -->
+<body onload="main()">
+
+<!-- canvas for drawing scene -->
+<canvas id="gl-canvas" width="1200" height="600"></canvas>
+
+</body>
+
+</html>
