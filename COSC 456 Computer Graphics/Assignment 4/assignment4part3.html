@@ -170,7 +170,7 @@ function draw()
 		var matrix1 = translate(x,y,0);
 		var matrix2 = multiply(translate(50,0,0),scaling(2,2,2));
 		var matrix3 = multiply(matrix1,matrix2);
-		var matrix4 = multiply(translate(50,0,0),multiply(rotatey(30),
+		var matrix4 = multiply(translate(50,0,0),multiply(rotatey(-rotation),
 		multiply(translate(-50,0,0),matrix3)));
 		
 		gl.uniformMatrix4fv(uModelMatrix, false, flatten(matrix4));
