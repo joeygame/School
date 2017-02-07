@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Lab 5 Site</title>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<link rel="stylesheet" type="text/css" href="stylesheet.css">
+	</head>
+	<body>
+	<div class="mainDiv">
+		<h1>Grid Generator 9000</h1>
+	
+		<form>
+			<p>Grid Height:<br><input id="height" type="text" /></br></p>
+			<p>Grid Width:<br><input id="width" type="text" /></br></p>
+			<button type="button" onclick="return gridGen()">Create Grid</button>
+		</form>
+		<p>
+		<table id="grid">
+		</table>
+		</p>
+	</div>
+	
+	<script>
+	var first = 1;
+	function gridGen() {
+		var table = document.getElementById("grid");
+		var tempVal = document.getElementById("height");
+		var heightV = 1*tempVal.value;
+		var tempVal = document.getElementById("width");
+		var widthV = 1*tempVal.value;
+		
+		for(var i = 0; i < table.rows.length;)
+		{   
+			table.deleteRow(i);
+		}
+		
+		for(var i = 0; i < heightV; i++){
+			var row = table.insertRow();
+				for(var j = 0; j < widthV; j++){
+				var cell = document.createElement("td");
+				row.appendChild(cell);
+				if(first==0){
+					cell.style.backgroundColor = "#"+((1<<24)*Math.random()|0).toString(16);
+					}
+				}
+		}
+		first = 0;
+	}
+	</script>
+	
+	</body>
+</html>

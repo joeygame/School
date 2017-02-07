@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Lab 9 Cookie Modules</title>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<link rel="stylesheet" type="text/css" href="stylesheet.css">
+		<script type="text/javascript" src="script.js"></script>
+		<script>
+		</script>
+	</head>
+		<div class="mainDiv">
+			<p class="title"> Lab 9: Cookie Function in Module Format</p>
+			<p class="title1">Enter both a name and value to save a cookie, then just enter the name
+								and press get value to have the cookie's value alerted.</p>
+			<p>
+			<form>
+				Cookie Name: <input type="text" id="inputName"><br />
+				Cookie Days: <input type="text" id="inputDays"><br />
+				Cookie Value: <input type="text" id="inputValue"><br />
+				<input type="button" value="Save as Cookie" onclick="setData(
+				document.getElementById('inputName').value,
+				document.getElementById('inputValue').value,
+				document.getElementById('inputDays').value
+				)">
+				<input type="button" value="Get Value" onclick="test(
+				document.getElementById('inputName').value)">
+			</form>
+			</p>
+		</div>
+	</body>
+</html>

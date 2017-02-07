@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+		<link rel="stylesheet" type="text/css" href="mainStyle.css">
+		<link href="https://fonts.googleapis.com/css?family=Lobster+Two" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+		<link rel="icon" href="favicon.ico">
+    <script src="script.js"></script>
+    <meta charset="UTF-8">
+		<title>Join the Mr. Mime Club</title>
+  </head>
+  <body>
+		<div class="topBar">
+			<p class="pageTitle">The Mr. Mime Club</p>
+			<p class="nav"> |
+				<a class="nav" href="index.html">Home</a> |
+				<a class="nav" href="about.html">Club</a> |
+				<a class="nav" href="mrmime.html">Mr. Mime</a> |
+				<span class="navHere">Register</span> |
+				<a class="nav" href="sitemap.html">Sitemap</a> |
+			</p>
+		</div>
+    <p class="title"> Register for the Mr. Mime Club Here!</p>
+		<div class="normal" id="mainForm">
+			<form method="post" id="reg" name="register">
+				<label for="user">Username (3-16 Characters, no caps): </label>
+				<input type="text" name="user" id="user" required><br>
+
+				<label for="pass">Password (6-18 Letters and Numbers): </label>
+				<input type="password" name="pass" id="pass" required><br>
+
+				<label for="fname">First Name: </label>
+				<input type="text" name="fname" id="fname" required><br>
+
+				<label for="lname">Last Name: </label>
+				<input type="text" name="lname" id="lname" required><br>
+
+				<label for="email">Email: </label>
+				<input type="email" name="email" id="email" required><br>
+
+				<label for="birth">Date of Birth: </label>
+				<input type="text" name="birth" id="birth" required><br>
+
+				<label>Gender: </label>
+				<input type="radio" name="gender" id="mgender" value="Male" required>Male
+				<input type="radio" name="gender" id="fgender" value="Female" required>Female<br>
+
+				Requested Title:
+				<select name="title" id="title" size="4" required>
+				<option value="Mr.">Mr.</option>
+				<option value="Mrs.">Mrs.</option>
+				<option value="Ms.">Ms.</option>
+				<option value="Miss.">Miss</option>
+				</select><br>
+
+				<label for="ccnumber">Credit Card Number: </label>
+				<input type="text" name="ccnumber" id="ccnumber" required><br>
+
+				Favorite Type of Apple:
+				<select name="apple" id="apple" size="6" required>
+				  <!--<option disabled selected value></option>-->
+			    <option label="Honeycrisp">Honeycrisp</option>
+			    <option label="Red Delicious">Red Delicious</option>
+		      <option label="Golden Delicious">Golden Delicious</option>
+				  <option label="Gala">Gala</option>
+				  <option label="Fuji">Fuji</option>
+				  <option label="Granny Smith">Granny Smith</option>
+				</select><br>
+
+				<input type="submit" value="Register" id="register" onclick="regUser()"><br>
+			</form>
+		</div>
+    <script type="text/javascript">onLoad()</script>
+  </body>
+</html>

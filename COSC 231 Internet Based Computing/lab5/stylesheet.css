@@ -1,0 +1,30 @@
+div.mainDiv {
+	width: 85%;
+	max-width: 900px;
+	font-family: 'Open Sans', sans-serif;
+	margin-bottom: 10px;
+	margin-left: auto;
+	margin-right: auto;
+	background-color: #ffffff;
+	color: #000000;
+	box-shadow: 4px 4px 0px #000000;
+	padding: 10px;
+	text-align: center;
+}
+
+body {
+	background-color: #F44336;
+}
+
+table {
+	margin: auto;
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+td {
+    border: 1px solid black;
+	width: 15px;
+	height: 15px;
+	margin: 0px;
+}

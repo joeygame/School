@@ -1,0 +1,42 @@
+div.mainDiv {
+	width: 85%;
+	max-width: 900px;
+	font-family: 'Open Sans', sans-serif;
+	margin-bottom: 10px;
+	margin-left: auto;
+	margin-right: auto;
+	background-color: #ffffff;
+	color: #000000;
+	padding: 10px;
+	text-align: center;
+}
+
+
+p.title {
+	font-size: 22pt;
+	font-weight: bold;
+	color: #000;
+	text-align: center;
+	padding: 0px;
+	margin: 15px;
+	font-family: 'Fjalla One', sans-serif;
+}
+
+p.title1 {
+	font-size: 12pt;
+	font-weight: bold;
+	color: #000;
+	text-align: center;
+	padding: 0px;
+	width: 70%;
+	margin: auto;
+	font-family: 'Fjalla One', sans-serif;
+}
+
+input {
+	margin: 10px;
+}
+
+body {
+	background-color: black;
+}

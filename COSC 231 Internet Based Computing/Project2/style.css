@@ -1,0 +1,23 @@
+td {
+	background-color: white;
+	width: 40px;
+	height: 40px;
+}
+
+table {
+	border-collapse: collapse;
+	border: 0px;
+}
+
+body {
+	background-color: grey;
+}
+
+p {
+	background-color: white;
+	color: magenta;
+	font-size: 20pt;
+	font-family: "Impact";
+	padding: 10px;
+	width: 200px;
+}

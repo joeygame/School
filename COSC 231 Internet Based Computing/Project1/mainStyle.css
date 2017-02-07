@@ -1,0 +1,284 @@
+div.topBar {
+	position: relative;
+	-webkit-box-shadow: 0px 0px 32px 0px rgba(0,0,0,0.75);
+	-moz-box-shadow: 0px 0px 32px 0px rgba(0,0,0,0.75);
+	box-shadow: 0px 0px 32px 0px rgba(0,0,0,0.75);
+	height: 80px;
+	line-height: 80px;
+	background-color: white;
+	width: 100%;
+	margin: 0px;
+	float: top;
+}
+
+.aboutFlex{
+    display: -webkit-flex;
+    display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: wrap;
+	flex-direction: row;
+}
+
+.box1 {
+	border-style: dashed;
+	border-width: 1px;
+    width: 400px;
+    height: 400px;
+    background-image: url("mrmimecute.jpg");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+	padding: 10px;
+	margin: 10px;
+}
+
+.box2 {
+	border-style: dashed;
+	border-width: 1px;
+	padding: 10px;
+	margin: 10px;
+	min-height: 400px;
+	max-width: 700px;
+	width: 100%;
+}
+
+.box3 {
+	border-style: dashed;
+	border-width: 1px;
+    width: 400px;
+    height: 400px;
+    background-image: url("mrmimestand.jpg");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+	padding: 10px;
+	margin: 10px;
+}
+
+.box4 {
+	border-style: dashed;
+	border-width: 1px;
+    width: 400px;
+    height: 400px;
+    background-image: url("connorjoey.png");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+	padding: 10px;
+	margin: 10px;
+}
+
+.box5 {
+	border-style: dashed;
+	border-width: 1px;
+    width: 400px;
+    height: 400px;
+    background-image: url("mimeandjr.png");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+	padding: 10px;
+	margin: 10px;
+}
+
+.box6 {
+	border-style: dashed;
+	border-width: 1px;
+    width: 400px;
+    height: 400px;
+    background-image: url("mimeattack.png");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+	padding: 10px;
+	margin: 10px;
+}
+
+.box7 {
+	border-style: dashed;
+	border-width: 1px;
+    width: 400px;
+    height: 400px;
+    background-image: url("mimescared.png");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+	padding: 10px;
+	margin: 10px;
+}
+
+p.disclaimer {
+	font-family: 'Raleway', sans-serif;
+	text-align: center;
+	color: gray;
+	font-size: 10pt;
+}
+
+html, body {
+	margin: 0px;
+	background-color: white;
+	background-position:  0px 800px;
+	font-family: 'Raleway', sans-serif;
+}
+
+div.img {
+	clear: both;
+	background: url("crop.gif") no-repeat center bottom;
+	height: 600px;
+	background-size: cover;
+	margin: 0px;
+	padding-top: 100px;
+	vertical-align: middle;
+}
+
+div.normal {
+	font-family: 'Raleway', sans-serif;
+	clear: both;
+	margin: 0px;
+	padding: 5px;
+	vertical-align: middle;
+	text-align: center;
+}
+
+p.title {
+	font-family: 'Lobster Two', cursive;
+	text-align: center;
+	font-size: 44px;
+	font-weight: bold;
+	color: #2d2d2d;
+	margin-bottom: 15px;
+	margin-top: 20px;
+}
+
+#clear {
+	clear: both;
+}
+
+#reg {
+	border-style: dashed;
+	border-width: 1px;
+	padding: 10px;
+	line-height: 30pt;
+	display:inline-block;
+	text-align: right;
+	margin: auto;
+	margin-top: 30px;
+	padding: 30px;
+}
+
+#events {
+	border-style: dashed;
+	border-width: 1px;
+	padding: 20px;
+	display:inline-block;
+	text-align: left;
+	margin: auto;
+	white-space: nowrap;
+	line-height: 30pt;
+	margin-bottom: 25px;
+	list-style-position:inside;
+}
+
+
+p.imgCenter {
+	margin: 0px;
+	font-family: 'Lobster Two', cursive;
+	font-size: 72px;
+	text-align: center;
+	color: #fff;
+	padding-bottom: 5px;
+	background-color: rgba(0, 0, 0, 0.5);;
+}
+
+p.pageTitle {
+	font-family: 'Lobster Two', cursive;
+	font-size: 45px;
+	float: left;
+	margin: 0px;
+	padding: 0px;
+	padding-left: 15px;
+}
+
+p.nav {
+	font-family: 'Lobster Two', cursive;
+	font-size: 30px;
+	float: right;
+	margin: 0px;
+	padding: 0px;
+	padding-right: 15px;
+}
+
+div.bottom {
+	position: absolute;
+	-webkit-box-shadow: 0px 0px 32px 0px rgba(0,0,0,0.75);
+	-moz-box-shadow: 0px 0px 32px 0px rgba(0,0,0,0.75);
+	box-shadow: 0px 0px 32px 0px rgba(0,0,0,0.75);
+	background-color: white;
+	width: 100%;
+	margin: 0px;
+	float: bottom;
+	text-align: center;
+	font-family: 'Raleway', sans-serif;
+}
+
+.titleSub {
+	font-family: 'Lobster Two', cursive;
+	font-size: 30px;
+	padding: 5px;
+	margin: 5px;
+	margin-top: 0px;
+	margin-bottom: 0px;
+	text-align: center;
+}
+
+a.nav {
+	color: black;
+	text-decoration: none;
+}
+
+a.nav:hover {
+	color: white;
+	background: black;
+}
+
+span.navHere {
+	color: gray;
+}
+
+.titleList {
+	font-family: 'Raleway', sans-serif;
+	font-size: 20px;
+	padding: 5px;
+	margin: 5px;
+}
+
+ul.about {
+	line-height: 20pt;
+	list-style-type: square;
+	margin-top: 0px;
+	margin-bottom: 0px;
+}
+
+#siteList {
+	width: 40%;
+	margin: auto;
+	text-align: left;
+	border-style: dashed;
+	border-width: 1px;
+	line-height: 30pt;
+	font-size: 18px;
+}
+
+
+ul.sitemap {
+	list-style-type: square;
+}
+
+.inner {
+	list-style-type: none;
+}
+
+p.inBox {
+	margin: 10px;
+}

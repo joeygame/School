@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Lab 7 Page</title>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<link rel="stylesheet" type="text/css" href="stylesheet.css">
+		<script>
+		
+		var javaIdentifier = /^[_a-zA-Z][_a-zA-Z0-9]{0,30}$/;
+		var phone = /^(\(\d{3}\)|\d{3})-?\d{3}-?\d{4}$/;
+		var email = /^(.+)@(.+){2,}\.(.+){2,}$/;
+		var date = /^(0?[1-9]|1[012])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-]\d{4}$/;
+		var eid = /^[eE]\d{9}$/;
+		
+		function isJavaIdentifier(input){
+			return javaIdentifier.test(input);
+		}
+		
+		function isPhone(input){
+			return phone.test(input);
+		}
+		
+		function isEmail(input){
+			return email.test(input);
+		}
+		
+		function isDate(input){
+			return date.test(input);
+		}
+		
+		function isEid(input){
+			return eid.test(input);
+		}
+		
+		function beginCheck(){
+			var input = document.getElementById('input').value;
+			document.getElementById('out').innerHTML = " ";
+			isJavaIdentifier(input);
+			
+			if (isJavaIdentifier(input)){
+				document.getElementById('out').innerHTML = document.getElementById('out').innerHTML + "This is a valid Java Identifier. &nbsp;";
+			}
+			if (isPhone(input)){
+				document.getElementById('out').innerHTML = document.getElementById('out').innerHTML + "This is a valid Phone Number. &nbsp;";
+			}
+			if (isEmail(input)){
+				document.getElementById('out').innerHTML = document.getElementById('out').innerHTML + "This is a valid Email. &nbsp;";
+			}
+			if (isDate(input)){
+				document.getElementById('out').innerHTML = document.getElementById('out').innerHTML + "This is a valid Date. &nbsp;";
+			}
+			if (isEid(input)){
+				document.getElementById('out').innerHTML = document.getElementById('out').innerHTML + "This is a valid EID.";
+			}
+		}
+		</script>
+	</head>
+		<div class="mainDiv">
+			<p class="title"> Lab 7 </p>
+			<p class="title1">Enter some text, and we will detect if it is a java identifier, a phone number, an email, a date, or an EID.</p>
+			<p>
+			<form action="javascript:beginCheck()">
+				Enter Here: <input type="text" id="input">
+				<input type="button" id="submit" value="Check" onclick="beginCheck()">
+			</form>
+			</p>
+			<p class="title1" id="out"></p>
+		</div>
+	</body>
+</html>

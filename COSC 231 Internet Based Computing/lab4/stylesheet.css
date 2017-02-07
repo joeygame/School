@@ -1,0 +1,65 @@
+div.mainDiv {
+	width: 85%;
+	max-width: 900px;
+	font-family: 'Open Sans', sans-serif;
+	margin-bottom: 10px;
+	margin-left: auto;
+	margin-right: auto;
+	background-color: #ffffff;
+	color: #000000;
+	box-shadow: 4px 4px 0px #000000;
+	padding: 10px;
+}
+
+div.topLine {
+	color: black;
+	font-family: 'Open Sans', sans-serif;
+}
+
+
+a.linkTitle {
+	color: #E53935;
+	font-weight: bold;
+	text-decoration: none;
+	display: block;
+	margin-top: 15px;
+	margin-bottom: 0px;
+	padding: 0px;
+}
+
+#email {
+	color: #F44336;
+}
+
+p.title {
+	font-size: 22pt;
+	font-weight: bold;
+	color: #F44336;
+	text-align: center;
+	padding: 0px;
+	margin: 20px;
+	font-family: 'Fjalla One', sans-serif;
+}
+
+body {
+	background-color: #F44336;
+}
+
+.alignleft {
+	float: left;
+	line-height: 1.1;
+	padding: 0px;
+	margin-bottom: 0px;
+	margin-top: 0px;
+}
+
+.alignright {
+	float: right;
+	line-height: 1.1;
+	padding: 0px;
+	margin-bottom: 0px;
+}
+
+div.clear {
+	clear:both;
+}
