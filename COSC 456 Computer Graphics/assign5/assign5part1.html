@@ -1,0 +1,497 @@
+<!----This program draws multiple different 3d shapes spinning and moving---->
+<html>
+
+<head>
+<!--script files for webgl set up and math operations -->
+<script type = "text/javascript" src= "webgl-utils.js"></script>
+<script type = "text/javascript" src= "init-shaders.js"></script>
+<script type = "text/javascript" src= "math.js"></script>
+
+<!--script vertex shader-->
+<script id = "vertex-shader" type="x-shader/x-vertex">
+attribute vec3 aNormal;		//normal at vertex
+attribute vec4 aPosition;	//vertex coordinate
+attribute vec2 aTexCoord;
+
+uniform mat4 uModelMatrix;	//model matrix
+uniform mat4 uViewMatrix;	//view matrix
+uniform mat4 uProjectMatrix; //projection matrix
+uniform mat3 uNormalMatrix;	//normal matrix
+
+uniform	vec3 uLightLocation;	//light location
+uniform vec3 uAmbient;		//ambient light/reflect
+uniform vec3 uDiffuse;		//diffuse light/reflect
+uniform vec3 uSpecular;		//specular light/reflect
+
+varying vec4 vColor;		//varying color
+varying vec2 vTexCoord;
+void main()
+{
+	//model, view, project
+	gl_Position = uProjectMatrix * uViewMatrix * uModelMatrix * aPosition;
+	
+	vTexCoord = aTexCoord;
+	
+	//ambient color
+	vec3 ambient = uAmbient;
+	
+	//diffuse color
+	vec3 light = normalize((uViewMatrix*vec4(uLightLocation, 1.0)).xyz -
+		(uViewMatrix*uModelMatrix*aPosition).xyz);	//light vector
+	vec3 normal = normalize(uNormalMatrix*aNormal);			//normal vector
+	float diffuseWeight = max(dot(normal, light), 0.0);		//diffuse weight
+	vec3 diffuse = diffuseWeight*uDiffuse;
+	
+	//specular color
+	vec3 reflectLight = normalize(reflect(-light, normal));	//reflect vector
+	vec3 viewer = normalize(-(uViewMatrix*uModelMatrix*aPosition).xyz);//viewer
+	float specularWeight = pow(max(dot(reflectLight, viewer),0.0), 1.0);
+	vec3 specular = specularWeight*uSpecular;				//specular weight
+	
+	//check light and viewer are on normal side
+	if(dot(normal, light) < 0.0 || dot(normal, viewer) <0.0)
+	{
+		specular = vec3(0.0,0.0,0.0);
+	}	
+	//total color
+	vec3 color = ambient + diffuse + specular;
+	vColor = vec4(color, 1.0);
+}
+</script>
+
+<!--fragment shader -->
+<script id = "fragment-shader" type = "x-shader/x-fragment">
+precision mediump float;		//medium float precision
+
+varying vec4 vColor;			//varying color
+varying vec2 vTexCoord;			//varying texture
+
+uniform float uSurfaceFlag;
+uniform sampler2D uTexture;
+
+void main()
+{
+	if(uSurfaceFlag == 1.0)
+		gl_FragColor = vColor;
+	else
+		gl_FragColor = vColor*texture2D(uTexture, vTexCoord);
+}
+</script>
+
+<script>
+var gl;					//webgl context
+var uModelMatrix;		//model matrix
+var distance;			//translation distance
+var sign = -1;				//translation direction
+var angle1;				//rotation angle one
+var angle2;				//rotation angle two
+var size = 150;
+var sizeDir = 1;
+var uNormalMatrix;
+//main drawing function
+function main()
+{
+	//set up webgl
+        
+	 canvas = document.getElementById("gl-canvas");
+	gl= WebGLUtils.setupWebGL(canvas);
+		
+	//set up shaders
+        
+	 program = initShaders(gl, "vertex-shader", "fragment-shader");
+	gl.useProgram(program);
+	
+	//create color cube
+        
+	var vertices = [];
+	var normals = [];
+	textureCoordinates = [];
+	makeCube(vertices, normals, textureCoordinates);
+	makeTriangle(vec3(0.0, 1.0,  0.0), vec3(-1.0,-1.0, -1.0),
+		vec3(0.0, -1.0,  1.0), vec3(1.0, -1.0,  -1.0), 2,  vertices, normals);
+	makeSphere(vertices, normals);
+	
+	for(var i = 5000; i>0;i--){
+		textureCoordinates.push(vec2(Math.random(),Math.random()));
+	}
+	
+	//create vertex buffer and bind it 
+	var vertexBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+	
+	//connect vertex buffer to attribute variable aPosition
+        
+	var aPosition = gl.getAttribLocation(program, "aPosition");
+	gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+	gl.enableVertexAttribArray(aPosition);
+	
+	//buffer vertices into vertex buffer
+        
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices),gl.STATIC_DRAW);
+	
+	//create normal buffer and bind it
+	var normalBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+	
+	//connect normal buffer to attribute variable normal
+	var aNormal= gl.getAttribLocation(program, "aNormal");
+	gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0,0);
+	gl.enableVertexAttribArray(aNormal);
+	
+	//buffer normals into normal buffer
+	uNormalMatrix = gl.getUniformLocation(program, "uNormalMatrix");
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(normals), gl.STATIC_DRAW);
+	
+	//creature texture coord buffer and bind
+	textureBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
+	
+	//connect texture buffer
+	var aTexCoord= gl.getAttribLocation(program, "aTexCoord");
+	gl.vertexAttribPointer(aTexCoord, 2, gl.FLOAT, false, 0,0);
+	gl.enableVertexAttribArray(aTexCoord);
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(textureCoordinates), gl.STATIC_DRAW);
+	
+	
+	//view parameters
+        
+	var eye = vec3(400, 700, 500);
+	var at = vec3(300, 100, 0);
+	var up = vec3(0,1,0);
+	
+	//orthagonal projection parameters
+        
+	var width = 1200;
+	var height = 500;
+	var near = 1;
+	var far = 2000;
+	
+	//connect, create, and send view matrix
+        
+	var uViewMatrix = gl.getUniformLocation(program, "uViewMatrix");
+	viewMatrix = lookat(eye, at, up);
+	gl.uniformMatrix4fv(uViewMatrix, false, flatten(viewMatrix));
+	
+	//connect, create, and send projection matrix
+        
+	var uProjectMatrix = gl.getUniformLocation(program, "uProjectMatrix");
+	var matrix2 = orthogonal(width, height, near, far);
+	gl.uniformMatrix4fv(uProjectMatrix, false, flatten(matrix2));
+	
+	//connect light parameters
+	uAmbient = gl.getUniformLocation(program,"uAmbient");
+	uDiffuse = gl.getUniformLocation(program,"uDiffuse");
+	uSpecular = gl.getUniformLocation(program,"uSpecular");
+	uSurfaceFlag = gl.getUniformLocation(program,"uSurfaceFlag");
+	
+	//light location
+	uLightLocation = gl.getUniformLocation(program,"uLightLocation");
+	
+	//connect to model matrix
+	uModelMatrix = gl.getUniformLocation(program, "uModelMatrix");
+	gl.uniform3fv(uLightLocation, flatten(eye = vec3(400, 700, 500)));
+	
+	//initiate values
+	distance = 300;
+	sign = 1;
+	angle1 = 0;
+	angle2 = 0;
+	
+	//set viewport
+	gl.viewport(0,0,canvas.width, canvas.height);
+	
+	//canvas color is black
+	gl.clearColor(0.0,0.0,0.0,1.0);
+	
+	//enable depth test
+	gl.enable(gl.DEPTH_TEST);
+	
+	//create image and texture
+     image = new Image();
+    image.src = "texture1.jpg";
+    image.onload = function() {createTexture(image);};
+
+function createTexture(image)
+{
+    //create and bind texture
+    texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    //set texture parameter
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	
+    //assign image to texture
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+	
+    //connect texture to shader
+    uTexture = gl.getUniformLocation(program, "uTexture");
+	gl.uniform1i(uTexture,0);
+	
+	//draw scene
+	draw();
+
+}
+}
+//draws scene
+function draw()
+{
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+
+	
+	var matrix, matrix1, matrix2, matrix3;
+	gl.uniform1f(uSurfaceFlag, 1.0);
+	
+	/********************cube floating around x axis***************************/
+	angle2 = angle2 + 2;				//update angle
+	matrix1 = scaling(30,30,30);
+	matrix2 = translate(0,40,0);
+	matrix3 = rotatex(angle2);
+	matrix = multiply(matrix3, multiply(matrix2, matrix1));
+	matrix = multiply(translate(0,0,180),matrix);
+	modelMatrix = matrix;
+	
+	modelViewMatrix = multiply(viewMatrix, modelMatrix);//model view matrix
+	normalMatrix = makeNormalMatrix(modelViewMatrix);
+	gl.uniformMatrix3fv(uNormalMatrix, false, flatten(normalMatrix));
+	
+	ambient = vec3(.2,.2,.2);
+	diffuse = vec3(0.2,0.0,0.0);
+	specular = vec3(0.7,0.0,0.0);
+	gl.uniform3fv(uAmbient, flatten(ambient));
+	gl.uniform3fv(uDiffuse, flatten(diffuse));
+	gl.uniform3fv(uSpecular, flatten(specular));
+	gl.uniformMatrix4fv(uModelMatrix, false, flatten(matrix));
+	
+	gl.drawArrays(gl.TRIANGLES, 0, 36);			//draw cube
+	
+	/******************************************************************/
+	
+	/********************sierpenski's triangle spinning**************************/
+	angle1 = angle1 + 4;				//update angle
+	matrix1 = scaling(90,90,90);
+	matrix3 = rotatey(angle1);
+	matrix = multiply(matrix3, matrix1);
+	matrix = multiply(translate(0,400,180),matrix);
+	modelMatrix = matrix;
+	
+	modelViewMatrix = multiply(viewMatrix, modelMatrix);//model view matrix
+	normalMatrix = makeNormalMatrix(modelViewMatrix);
+	gl.uniformMatrix3fv(uNormalMatrix, false, flatten(normalMatrix));
+	
+	ambient = vec3(.2,.2,.2);
+	diffuse = vec3(0.0,0.7,0.0);
+	specular = vec3(0.0,0.2,0.0);
+	gl.uniform3fv(uAmbient, flatten(ambient));
+	gl.uniform3fv(uDiffuse, flatten(diffuse));
+	gl.uniform3fv(uSpecular, flatten(specular));
+	gl.uniformMatrix4fv(uModelMatrix, false, flatten(matrix));
+	
+	gl.drawArrays(gl.TRIANGLES,36, 192);		
+	
+	/******************************************************************/
+	
+	/********************oscillating circle*************************/
+	distance = distance + 3*sign;
+	
+	if (distance > 500 || distance < 300)
+		sign = sign*-1;
+	
+	
+	matrix1 = scaling(40,40,40);
+	matrix2 = translate(200 + distance,400,0);
+	matrix = multiply(matrix2, matrix1);
+	matrix = multiply(translate(0,0,180),matrix);
+	modelMatrix = matrix;
+	
+	modelViewMatrix = multiply(viewMatrix, modelMatrix);//model view matrix
+	normalMatrix = makeNormalMatrix(modelViewMatrix);
+	gl.uniformMatrix3fv(uNormalMatrix, false, flatten(normalMatrix));
+	
+	ambient = vec3(.2,.2,.0);
+	diffuse = vec3(0.3,0.3,0.3);
+	specular = vec3(0.7,0.7,0.0);
+	gl.uniform3fv(uAmbient, flatten(ambient));
+	gl.uniform3fv(uDiffuse, flatten(diffuse));
+	gl.uniform3fv(uSpecular, flatten(specular));
+	gl.uniformMatrix4fv(uModelMatrix, false, flatten(matrix));
+	
+	gl.drawArrays(gl.TRIANGLES,228, 3888);			
+	
+	/******************************************************************/
+	
+	gl.uniform1f(uSurfaceFlag, 0.0);
+	
+	/********************textured cube spinning**************************/
+	matrix1 = scaling(40,40,40);
+	matrix3 = rotatey(-angle1*.1);
+	matrix = multiply(matrix3, matrix1);
+	matrix = multiply(translate(300,400,180),matrix);
+	modelMatrix = matrix;
+	
+	modelViewMatrix = multiply(viewMatrix, modelMatrix);//model view matrix
+	normalMatrix = makeNormalMatrix(modelViewMatrix);
+	gl.uniformMatrix3fv(uNormalMatrix, false, flatten(normalMatrix));
+	
+	ambient = vec3(.2,.2,.2);
+	diffuse = vec3(0.7,0.7,0.7);
+	specular = vec3(0.2,0.2,0.2);
+	gl.uniform3fv(uAmbient, flatten(ambient));
+	gl.uniform3fv(uDiffuse, flatten(diffuse));
+	gl.uniform3fv(uSpecular, flatten(specular));
+	gl.uniformMatrix4fv(uModelMatrix, false, flatten(matrix));
+	
+	gl.drawArrays(gl.TRIANGLES,0, 36);			//draw cube
+	
+	/******************************************************************/
+	
+	/********************interesting obj***************************/
+	matrix1 = scaling(20,40,20);
+	matrix2 = translate(200,40,0);
+	matrix3 = multiply(rotatex(angle2*.5),rotatez(angle2));
+	matrix = multiply(matrix2, multiply(matrix3, matrix1));
+	matrix = multiply(translate(0,0,180),matrix);
+	modelMatrix = matrix;
+	
+	modelViewMatrix = multiply(viewMatrix, modelMatrix);//model view matrix
+	normalMatrix = makeNormalMatrix(modelViewMatrix);
+	gl.uniformMatrix3fv(uNormalMatrix, false, flatten(normalMatrix));
+	
+	ambient = vec3(.4,.0,.0);
+	diffuse = vec3(0.0,0.0,1.0);
+	specular = vec3(0.0,1.0,0.0);
+	gl.uniform3fv(uAmbient, flatten(ambient));
+	gl.uniform3fv(uDiffuse, flatten(diffuse));
+	gl.uniform3fv(uSpecular, flatten(specular));
+	gl.uniformMatrix4fv(uModelMatrix, false, flatten(matrix));
+	
+	gl.drawArrays(gl.TRIANGLES, 0, 36);			//draw cube
+	
+	/******************************************************************/
+	
+	requestAnimationFrame(draw);
+}
+	//creates color cube centered at origin 
+function makeCube(vertexArray, normalArray, textureArray){
+		//8 vertices of cube
+	var v1 = vec3(-1,1,1), v2 = vec3(1,1,1),
+		v3 = vec3(1,-1,1), v4 = vec3(-1,-1,1),
+		v5 = vec3(-1,1,-1), v6 = vec3(1,1,-1),
+		v7 = vec3(1,-1,-1), v8 = vec3(-1,-1,-1);
+		
+	    // 4 texture coordinates of square
+     var t1 = vec2(0.0,0.0);  var t2 = vec2(0.0,1.0);
+      var t3 = vec2(1.0,1.0); var t4 = vec2(1.0,0.0);
+		
+		//6 normals of cube faces
+	var n1 = vec3(0,0,1), n2 = vec3(0,1,0), //front,top normals
+	 n3 = vec3(1,0,0), n4 = vec3(0,0,-1),// right,back normals
+	 n5 = vec3(0,-1,0), n6 = vec3(-1,0,0);//bottom, left normals
+	 
+	 
+		//6 faces of cube, each face is 2 triangles
+                
+		vertexArray.push(v1, v2, v3, v1, v3, v4,
+						  v1, v5, v6, v1, v6, v2,
+						  v2, v6, v7, v2, v7, v3,
+						  v5, v6, v7, v5, v7, v8,
+						  v4, v8, v7, v4, v7, v3,
+						  v1, v5, v8, v1, v8, v4);
+						 
+	
+			
+	//cube face normals
+	normalArray.push(n1,n1,n1,n1,n1,n1,
+					 n2,n2,n2,n2,n2,n2,
+					 n3,n3,n3,n3,n3,n3,
+					 n4,n4,n4,n4,n4,n4,
+					 n5,n5,n5,n5,n5,n5,
+					 n6,n6,n6,n6,n6,n6);	
+	//push textures
+    textureArray.push( t1, t2, t3, t1, t3, t4,
+                        t1, t2, t3, t1, t3, t4,
+                        t1, t2, t3, t1, t3, t4,
+                        t1, t2, t3, t1, t3, t4,
+                        t1, t2, t3, t1, t3, t4,
+                        t1, t2, t3, t1, t3, t4);
+}
+	
+	//creates Sierpenski's triangle
+function makeTriangle(a, b, c, d, count, vertexArray, colorArray)
+{
+if (count == 0) //base case
+tetra(a, b, c, d, vertexArray, colorArray); //create tetrahedron
+else
+{
+	var ab = scale(0.5, add(a, b)); //recursive case
+	var ac = scale(0.5, add(a, c));
+	var ad = scale(0.5, add(a, d)); //sub divide
+	var bc = scale(0.5, add(b, c));
+	var bd = scale(0.5, add(b, d)); //create 4 Sierpenski's
+	var cd = scale(0.5, add(c, d)); //triangles recursively
+	makeTriangle(a, ab, ac, ad, count -1, vertexArray, colorArray);
+	makeTriangle(ab, b, bc, bd, count -1, vertexArray, colorArray);
+	makeTriangle(ac, bc, c, cd, count -1, vertexArray, colorArray);
+	makeTriangle(ad, bd, cd, d, count -1, vertexArray, colorArray);
+    }
+}
+//creates a tetrahedron with four face colors
+function tetra(a, b, c, d, vertexArray, colorArray)
+{
+//create 4 triangles
+triangle(a, b, c, vertexArray, colorArray);
+triangle(a, c, d, vertexArray, colorArray);
+triangle(a, b, d, vertexArray, colorArray);
+triangle(b, c, d, vertexArray, colorArray);
+}
+//creates a triangle with a given color
+function triangle(a, b, c, vertexArray, colorArray)
+{
+vertexArray.push(a, b, c); //store vertices
+var n1 = cross(subtract(b,a), subtract(c,a));
+colorArray.push(n1, n1, n1); //store normals
+}
+
+function makeSphere(vertexArray, normalArray){
+	for(var i = -90; i<= 80; i = i+10){
+		for(var j = 0; j<=350; j = j+10){
+			var theta = i*Math.PI/180;
+			var phi = j*Math.PI/180;
+			var thetaPlus = (i+10)*Math.PI/180;
+			var phiPlus = (j+10)*Math.PI/180;
+			
+			var v1 = vec3(Math.cos(theta)*Math.sin(phi),
+					Math.sin(theta),
+					Math.cos(theta)*Math.cos(phi));
+		
+			var v2 = vec3(Math.cos(thetaPlus)*Math.sin(phi),
+					  Math.sin(thetaPlus),
+					  Math.cos(thetaPlus)*Math.cos(phi));
+					  
+			var v3 = vec3(Math.cos(thetaPlus)*Math.sin(phiPlus),
+					  Math.sin(thetaPlus),
+					  Math.cos(thetaPlus)*Math.cos(phiPlus));
+					  
+			var v4 = vec3(Math.cos(theta)*Math.sin(phiPlus),
+					  Math.sin(theta),
+					  Math.cos(theta)*Math.cos(phiPlus));		
+
+			vertexArray.push(v1, v2, v3, v1, v3, v4);
+			normalArray.push(v1, v2, v3, v1, v3, v4);
+		}
+	}			
+}
+</script>
+	
+</head>
+	
+	<!--draw scene-->
+	<body onload = "main()">
+	
+	<!--canvas for drawing scene-->
+	<canvas id = "gl-canvas" width = "1200" height = "600"></canvas>
+	
+	</body>
+	</html>
+	
